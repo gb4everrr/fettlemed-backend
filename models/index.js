@@ -7,12 +7,15 @@ const env = process.env.NODE_ENV || 'development';
 const config = require(__dirname + '/../config/config.js')[env]; 
 const db = {};
 
-const sequelize = new Sequelize(config.database, config.username, config.password, {
-  host: config.host,
-  port: config.port,
-  dialect: config.dialect,
-  logging: console.log
-});
+let sequelize;
+if (config.use_env_variable) {
+  // This block is for PRODUCTION (uses the DATABASE_URL from Render)
+  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+} else {
+  // This block is for DEVELOPMENT (uses the .env file from your local machine)
+  // I've simplified this line slightly to pass the whole config object.
+  sequelize = new Sequelize(config.database, config.username, config.password, config);
+}
 
 fs.readdirSync(__dirname)
   .filter(file => file.endsWith('.js') && file !== 'index.js')
