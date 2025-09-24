@@ -4,7 +4,23 @@ const cors = require('cors');
 require('dotenv').config();
 
 // Middleware
-app.use(cors());
+const whitelist = [
+  'https://fettlemed-frontend.vercel.app/',
+  'http://localhost:3000' , 'http://localhost:3001'  // Forlocal development
+]; 
+    
+const corsOptions = {
+  origin: function (origin, callback) {
+    // The '|| !origin' allows server-to-server requests and tools like Postman
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes

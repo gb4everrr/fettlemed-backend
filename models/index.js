@@ -9,11 +9,10 @@ const db = {};
 
 let sequelize;
 if (config.use_env_variable) {
-  // This block is for PRODUCTION (uses the DATABASE_URL from Render)
+  // This block is for PRODUCTION 
   sequelize = new Sequelize(process.env[config.use_env_variable], config);
 } else {
-  // This block is for DEVELOPMENT (uses the .env file from your local machine)
-  // I've simplified this line slightly to pass the whole config object.
+  // This block is for DEVELOPMENT.
   sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
 
