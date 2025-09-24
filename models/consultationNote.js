@@ -1,13 +1,24 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('ConsultationNote', {
+  const ConsultationNote = sequelize.define('ConsultationNote', {
     appointment_id: { type: DataTypes.INTEGER, allowNull: false },
-    doctor_id: { type: DataTypes.INTEGER, allowNull: false },
-    patient_id: { type: DataTypes.INTEGER, allowNull: false },
-    clinic_id: { type: DataTypes.INTEGER, allowNull: false },
-    notes: { type: DataTypes.TEXT, allowNull: false },
+    // Including legacy columns to match the table exactly
+    patient_profile_id: { type: DataTypes.INTEGER },
+    doctor_profile_id: { type: DataTypes.INTEGER },
+    // Correcting the column name from 'notes' to 'note'
+    note: { type: DataTypes.TEXT, allowNull: false }, 
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
   }, {
     tableName: 'consultation_note',
     timestamps: false
   });
+
+  ConsultationNote.associate = (models) => {
+    ConsultationNote.belongsTo(models.Appointment, {
+      foreignKey: 'appointment_id',
+      as: 'appointment'
+    });
+  };
+
+  return ConsultationNote;
 };
+

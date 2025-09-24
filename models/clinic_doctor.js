@@ -2,7 +2,11 @@ module.exports = (sequelize, DataTypes) => {
   const ClinicDoctor = sequelize.define('ClinicDoctor', {
     clinic_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      references: {
+        model: 'clinic', 
+        key: 'id'
+      }
     },
     global_doctor_id: {
       type: DataTypes.INTEGER,
@@ -40,10 +44,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: true
     },
-    role: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
     active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
@@ -53,6 +53,24 @@ module.exports = (sequelize, DataTypes) => {
     freezeTableName: true,
     timestamps: false
   });
+
+  // ADD THIS ASSOCIATE FUNCTION
+  ClinicDoctor.associate = (models) => {
+    ClinicDoctor.hasMany(models.ClinicVitalConfig, {
+      foreignKey: 'clinic_doctor_id',
+      as: 'vitalConfigs'
+    });
+    ClinicDoctor.hasMany(models.Appointment, {
+      foreignKey: 'clinic_doctor_id',
+      as: 'appointments'
+    });
+    ClinicDoctor.belongsTo(models.Clinic, {
+      foreignKey: 'clinic_id',
+      as: 'Clinic'
+    });
+  };
+
+  
 
   return ClinicDoctor;
 };

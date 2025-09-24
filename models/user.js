@@ -34,5 +34,12 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true           
   });
 
+  User.associate = (models) => {
+    User.hasOne(models.DoctorProfile, {
+      foreignKey: 'user_id',
+      as: 'doctorProfile'
+    });
+  };
+
   return User;
 };

@@ -8,11 +8,12 @@ router.use(authenticate);
 // Service routes
 router.post('/service/create', clinicInvoiceController.createService);
 router.put('/service/update/:id', clinicInvoiceController.updateService);
-router.delete('/service/delete/:id', clinicInvoiceController.deleteService);
+router.post('/service/delete/:id', clinicInvoiceController.deleteService);
 router.get('/service/list', clinicInvoiceController.listServices);
 
 // Invoice routes
 router.post('/invoice/create', clinicInvoiceController.createInvoice);
 router.get('/invoice/:id', clinicInvoiceController.getInvoiceDetails);
+router.get('/invoices/list', clinicInvoiceController.listInvoices);
 
 module.exports = router;

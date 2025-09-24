@@ -17,5 +17,12 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false
   });
 
+  DoctorProfile.associate = (models) => {
+    DoctorProfile.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      as: 'user'
+    });
+  };
+
   return DoctorProfile;
 };
