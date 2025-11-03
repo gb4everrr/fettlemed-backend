@@ -5,7 +5,7 @@ require('dotenv').config();
 
 // Middleware
 const whitelist = [
-  'https://fettlemed-frontend.vercel.app/',
+  'https://fettlemed-frontend.vercel.app',
   'http://localhost:3000' , 'http://localhost:3001'  // Forlocal development
 ]; 
     
