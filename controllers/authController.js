@@ -29,8 +29,8 @@ exports.register = async (req, res) => {
       );
     } else if (user.role === 'doctor') {
       await ClinicDoctor.update(
-        { doctor_profile_id: user.id },
-        { where: { doctor_profile_id: null, phone_number: user.phone_number } }
+        { global_doctor_id: user.id },
+        { where: { global_doctor_id: null, phone_number: user.phone_number } }
       );
     }
 

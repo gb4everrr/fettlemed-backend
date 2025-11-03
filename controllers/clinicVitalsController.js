@@ -132,10 +132,13 @@ exports.getClinicVitalLibrary = async (req, res) => {
   }
 };
 
-// KEEP SAME: submitPatientVitals (just add appointment_id support)
+// FIXED: submitPatientVitals - Now saves config_id
 exports.submitPatientVitals = async (req, res) => {
   const { clinic_id, clinic_patient_id, recorded_by_admin_id, appointment_id, values } = req.body;
   try {
+    console.log('=== Submit Vitals Debug ===');
+    console.log('Request body:', { clinic_id, clinic_patient_id, recorded_by_admin_id, appointment_id, values });
+    
     const clinicIdInt = parseInt(clinic_id);
     if (isNaN(clinicIdInt)) {
       return res.status(400).json({ error: 'Invalid clinic_id' });
@@ -145,28 +148,61 @@ exports.submitPatientVitals = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
+    // First, delete any existing vitals entry for this appointment
+    if (appointment_id) {
+      const existingEntries = await VitalsEntry.findAll({
+        where: { appointment_id: parseInt(appointment_id), clinic_id: clinicIdInt }
+      });
+      
+      console.log('Found existing entries:', existingEntries.length);
+      
+      for (const entry of existingEntries) {
+        await VitalsRecordedValue.destroy({ where: { vitals_entry_id: entry.id } });
+        await entry.destroy();
+      }
+    }
+
+    // Create new vitals entry
+    console.log('Creating vitals entry...');
     const entry = await VitalsEntry.create({
       clinic_id: clinicIdInt,
-      clinic_patient_id,
-      recorded_by_admin_id,
-      appointment_id: appointment_id || null, // ADD THIS
+      clinic_patient_id: parseInt(clinic_patient_id),
+      recorded_by_admin_id: parseInt(recorded_by_admin_id),
+      appointment_id: appointment_id ? parseInt(appointment_id) : null,
       entry_time: new Date().toLocaleTimeString('en-GB', { hour12: false })
     });
 
+    console.log('Created entry with ID:', entry.id);
+    console.log('Entry details:', entry.toJSON());
+
+    // --- START OF FIX ---
+    // Create records using config_id directly
     const records = values.map(v => ({
       vitals_entry_id: entry.id,
-      config_id: v.config_id, // KEEP THIS - references clinic_vital_config
+      config_id: parseInt(v.config_id), // Use config_id
       vital_value: v.vital_value
     }));
+    // --- END OF FIX ---
+
+    console.log('Creating recorded values:', records);
 
     await VitalsRecordedValue.bulkCreate(records);
+    
+    console.log('Successfully created vitals entry');
     res.status(201).json({ entry_id: entry.id });
   } catch (err) {
+    console.error('Error submitting vitals:', err);
+    console.error('Error details:', {
+      name: err.name,
+      message: err.message,
+      sql: err.sql,
+      original: err.original
+    });
     res.status(500).json({ error: err.message });
   }
 };
 
-// KEEP SAME: getPatientVitals (just add appointment filtering)
+// FIXED: getPatientVitals - Now properly includes config to get vital_name
 exports.getPatientVitals = async (req, res) => {
   const { clinic_patient_id } = req.params;
   const { appointment_id, clinic_id } = req.query;
@@ -196,26 +232,30 @@ exports.getPatientVitals = async (req, res) => {
         {
           model: VitalsRecordedValue,
           as: 'values',
+          // --- START OF FIX ---
+          attributes: ['id', 'vitals_entry_id', 'vital_value', 'config_id'], // Select config_id
           include: [
             {
-              model: ClinicVitalConfig,
+              model: ClinicVitalConfig, // Include the config model
               as: 'config',
-              // FIX: Add 'attributes' to the included model to explicitly specify columns.
-              attributes: ['id', 'clinic_id', 'vital_name', 'data_type', 'unit', 'is_active', 'is_required']
+              attributes: ['vital_name', 'unit'] // Get the name and unit from config
             }
           ]
+          // --- END OF FIX ---
         }
       ],
       order: [['entry_date', 'DESC'], ['entry_time', 'DESC']]
     });
     
     res.json(entries);
-  } catch (err) {
+  } catch (err)
+ {
+    console.error('Error fetching patient vitals:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// NEW: Get vitals for a specific appointment
+// FIXED: Get vitals for a specific appointment
 exports.getVitalsForAppointment = async (req, res) => {
   const { appointment_id } = req.params;
   const { clinic_id } = req.query;
@@ -236,20 +276,24 @@ exports.getVitalsForAppointment = async (req, res) => {
         {
           model: VitalsRecordedValue,
           as: 'values',
+          // --- START OF FIX ---
+          attributes: ['id', 'vitals_entry_id', 'vital_value', 'config_id'], // Select config_id
           include: [
             {
-              model: ClinicVitalConfig,
+              model: ClinicVitalConfig, // Include the config model
               as: 'config',
-              // FIX: Add 'attributes' to the included model to explicitly specify columns.
-              attributes: ['id', 'clinic_id', 'vital_name', 'data_type', 'unit', 'is_active', 'is_required']
+              attributes: ['vital_name', 'unit'] // Get the name and unit from config
             }
           ]
+          // --- END OF FIX ---
         }
-      ]
+      ],
+      order: [['entry_date', 'DESC'], ['entry_time', 'DESC']]
     });
     
     res.json(entries);
   } catch (err) {
+    console.error('Error fetching appointment vitals:', err);
     res.status(500).json({ error: err.message });
   }
 };

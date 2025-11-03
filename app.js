@@ -36,6 +36,7 @@ const prescriptionRoutes = require('./routes/prescriptionRoutes');
 const consultationNoteRoutes = require('./routes/consultationNoteRoutes');
 const doctorVitalsRoutes = require('./routes/doctorVitalsRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
+const vitalsRoutes = require('./routes/clinicVitalsRoutes');
 
 // Mounting route files
 app.use('/api/auth', authRoutes);
@@ -50,6 +51,7 @@ app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/consultation-notes', consultationNoteRoutes);
 app.use('/api/doctor/vitals', doctorVitalsRoutes);
 app.use('/api/doctor', doctorRoutes);
+app.use('/api/vitals', vitalsRoutes);
 
 
 
