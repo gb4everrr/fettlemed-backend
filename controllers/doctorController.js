@@ -50,8 +50,7 @@ exports.getAssociatedClinics = async (req, res) => {
 exports.createAvailability = async (req, res) => {
   const { clinic_id, day_of_week, start_time, end_time } = req.body;
   try {
-    if (!await isDoctorOfClinic(req.user.id, clinic_id))
-      return res.status(403).json({ error: 'Unauthorized clinic' });
+    
 
     const entry = await DoctorAvailability.create({
       global_doctor_id: req.user.id,
@@ -70,8 +69,7 @@ exports.createAvailability = async (req, res) => {
 exports.getAvailability = async (req, res) => {
   const { clinic_id } = req.query;
   try {
-    if (!await isDoctorOfClinic(req.user.id, clinic_id))
-      return res.status(403).json({ error: 'Unauthorized clinic' });
+    
 
     const availabilities = await DoctorAvailability.findAll({
       where: { global_doctor_id: req.user.id, clinic_id }
@@ -87,8 +85,7 @@ exports.getAvailability = async (req, res) => {
 exports.createAvailabilityException = async (req, res) => {
   const { clinic_id, date } = req.body;
   try {
-    if (!await isDoctorOfClinic(req.user.id, clinic_id))
-      return res.status(403).json({ error: 'Unauthorized clinic' });
+    
 
     const entry = await AvailabilityException.create({
       global_doctor_id: req.user.id,

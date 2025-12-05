@@ -2,14 +2,17 @@ const express = require('express');
 const router = express.Router();
 const appointmentController = require('../controllers/appointmentController');
 const authenticate = require('../middleware/authenticate');
+const { checkPermission } = require('../middleware/rbacMiddleWare');
 
 router.use(authenticate);
 
-router.post('/', appointmentController.createAppointment);
-router.put('/:id', appointmentController.updateAppointment);
-router.put('/:id/toggle', appointmentController.toggleConfirmation);
-router.delete('/:id', appointmentController.cancelAppointment);
-router.get('/', appointmentController.getAppointments);
-router.get('/slots', appointmentController.getAvailableSlotsForAdmin);
+// Reception & Doctors & Patients (if you have a patient portal)
+router.post('/', checkPermission('manage_appointments'), appointmentController.createAppointment);
+router.put('/:id', checkPermission('manage_appointments'), appointmentController.updateAppointment);
+router.put('/:id/toggle', checkPermission('manage_appointments'), appointmentController.toggleConfirmation);
+router.delete('/:id', checkPermission('manage_appointments'), appointmentController.cancelAppointment);
+
+router.get('/', checkPermission('view_all_schedule'), appointmentController.getAppointments);
+router.get('/slots', checkPermission('manage_appointments'), appointmentController.getAvailableSlotsForAdmin);
 
 module.exports = router;

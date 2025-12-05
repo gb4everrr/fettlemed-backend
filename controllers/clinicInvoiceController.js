@@ -1,23 +1,11 @@
 const { Service, Invoice, InvoiceService, ClinicAdmin, ClinicDoctor, ClinicPatient } = require('../models');
 
-const isAuthorizedForClinic = async (userId, clinicId) => {
-  const isAdmin = await ClinicAdmin.findOne({ 
-    where: { user_id: userId, clinic_id: clinicId } 
-  });
-  if (isAdmin) return true;
-  
-  const isDoctor = await ClinicDoctor.findOne({ 
-    where: { global_doctor_id: userId, clinic_id: clinicId, active: true } 
-  });
-  return !!isDoctor;
-};
+
 
 exports.createService = async (req, res) => {
   const { clinic_id, name, price } = req.body;
   try {
-    if (!await isAuthorizedForClinic(req.user.id, clinic_id)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
     
     const service = await Service.create({ 
       clinic_id, 
@@ -34,9 +22,7 @@ exports.updateService = async (req, res) => {
   const { id } = req.params;
   const { clinic_id, name, price } = req.body;
   try {
-    if (!await isAuthorizedForClinic(req.user.id, clinic_id)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
     
     await Service.update({ name, price }, { where: { id, clinic_id } });
     const updated = await Service.findByPk(id);
@@ -50,9 +36,7 @@ exports.deleteService = async (req, res) => {
   const { id } = req.params;
   const { clinic_id } = req.body;
   try {
-    if (!await isAuthorizedForClinic(req.user.id, clinic_id)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
     
     await Service.destroy({ where: { id, clinic_id } });
     res.json({ message: 'Service deleted' });
@@ -77,9 +61,7 @@ exports.createInvoice = async (req, res) => {
   // CHANGED: Now expecting clinic_patient_id instead of patient_profile_id
   const { clinic_id, clinic_patient_id, services } = req.body;
   try {
-    if (!await isAuthorizedForClinic(req.user.id, clinic_id)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
 
     let total_amount = 0;
     const serviceLinks = [];
@@ -140,9 +122,7 @@ exports.getInvoiceDetails = async (req, res) => {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     
-    if (!await isAuthorizedForClinic(req.user.id, invoice.clinic_id)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
     
     const services = await InvoiceService.findAll({ where: { invoice_id: id } });
     res.json({ invoice, services });
@@ -155,9 +135,7 @@ exports.listInvoices = async (req, res) => {
   const { clinic_id, page = 1, limit = 10 } = req.query;
   
   try {
-    if (!await isAuthorizedForClinic(req.user.id, clinic_id)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
 
     const offset = (page - 1) * limit;
     
@@ -245,6 +223,75 @@ exports.listInvoices = async (req, res) => {
     });
   } catch (err) {
     console.error('Error in listInvoices:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateInvoice = async (req, res) => {
+  const { id } = req.params; // The ID of the invoice to update
+  const { clinic_id, clinic_patient_id, services, appointment_id } = req.body;
+
+  try {
+    // 1. Find the invoice and check authorization
+    const invoice = await Invoice.findByPk(id);
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    
+
+    // 2. Delete all old service links for this invoice
+    // This is the cleanest way to handle updates (add, remove, change)
+    await InvoiceService.destroy({
+      where: { invoice_id: id }
+    });
+
+    // 3. Re-process and add all services from the request
+    // (This logic is very similar to createInvoice)
+    let total_amount = 0;
+    const serviceLinks = [];
+
+    for (const service of services) {
+      let serviceRecordId = service.service_id;
+
+      // If it's an ad-hoc service (no service_id), create it to get an ID
+      if (!serviceRecordId) {
+        if (!service.name || service.price == null) {
+          return res.status(400).json({ error: 'Ad-hoc services must have a name and price' });
+        }
+        const newService = await Service.create({
+          clinic_id: clinic_id,
+          name: service.name,
+          price: service.price
+        });
+        serviceRecordId = newService.id;
+      }
+
+      // We use the price from the request, as it might be an override
+      total_amount += service.price;
+      
+      serviceLinks.push({
+        invoice_id: id, // Use the existing invoice ID
+        service_id: serviceRecordId,
+        price: service.price, // Price at the time of invoicing
+        appointment_id: service.appointment_id || null
+      });
+    }
+
+    // 4. Bulk create the new service links
+    await InvoiceService.bulkCreate(serviceLinks);
+
+    // 5. Update the main invoice record with the new total
+    await invoice.update({
+      total_amount: total_amount,
+      clinic_patient_id: clinic_patient_id // Update patient ID just in case
+    });
+
+    // 6. Send success response
+    res.status(200).json({ message: 'Invoice updated', invoice_id: invoice.id });
+
+  } catch (err) {
+    console.error('Error in updateInvoice:', err);
     res.status(500).json({ error: err.message });
   }
 };

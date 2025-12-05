@@ -2,18 +2,6 @@
 
 const { ClinicVitalConfig, VitalsEntry, VitalsRecordedValue, ClinicAdmin, ClinicDoctor } = require('../models');
 
-// ADD THIS HELPER FUNCTION IF IT'S MISSING
-const isClinicAdmin = async (userId, clinicId) => {
-  try {
-    const admin = await ClinicAdmin.findOne({ 
-      where: { user_id: userId, clinic_id: clinicId } 
-    });
-    return !!admin;
-  } catch (error) {
-    console.error('Error checking clinic admin:', error);
-    return false;
-  }
-};
 
 // RENAMED: createVitalConfig → createVitalLibraryItem
 exports.createVitalLibraryItem = async (req, res) => {
@@ -26,9 +14,7 @@ exports.createVitalLibraryItem = async (req, res) => {
       return res.status(400).json({ error: 'Invalid clinic_id' });
     }
     
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Only clinic admins can manage vital library' });
-    }
+    
     
     // FIX: Use 'returning' to explicitly specify the columns to return after creation.
     const vitalConfig = await ClinicVitalConfig.create(req.body, { 
@@ -53,9 +39,6 @@ exports.updateVitalLibraryItem = async (req, res) => {
       return res.status(400).json({ error: 'Invalid clinic_id' });
     }
 
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Only clinic admins can manage vital library' });
-    }
     
     await ClinicVitalConfig.update(updateFields, { where: { id, clinic_id: clinicIdInt } });
     
@@ -82,9 +65,6 @@ exports.deleteVitalLibraryItem = async (req, res) => {
       return res.status(400).json({ error: 'Invalid clinic_id' });
     }
     
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Only clinic admins can manage vital library' });
-    }
     
     await ClinicVitalConfig.update(
       { is_active: false }, 
@@ -113,9 +93,7 @@ exports.getClinicVitalLibrary = async (req, res) => {
       return res.status(400).json({ error: 'Invalid clinic_id' });
     }
 
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Only clinic admins can view vital library' });
-    }
+    
 
     const vitals = await ClinicVitalConfig.findAll({
       // FIX: Explicitly specify the columns to select.
@@ -144,10 +122,7 @@ exports.submitPatientVitals = async (req, res) => {
       return res.status(400).json({ error: 'Invalid clinic_id' });
     }
 
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
-
+    
     // First, delete any existing vitals entry for this appointment
     if (appointment_id) {
       const existingEntries = await VitalsEntry.findAll({
@@ -219,10 +194,7 @@ exports.getPatientVitals = async (req, res) => {
       if (isNaN(clinicIdInt)) {
         return res.status(400).json({ error: 'Invalid clinic_id' });
       }
-      const isAdmin = await isClinicAdmin(req.user.id, clinicIdInt);
-      if (!isAdmin) {
-        return res.status(403).json({ error: 'Unauthorized' });
-      }
+      
       whereClause.clinic_id = clinicIdInt;
     }
 
@@ -266,9 +238,7 @@ exports.getVitalsForAppointment = async (req, res) => {
       return res.status(400).json({ error: 'Invalid clinic_id' });
     }
 
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+   
 
     const entries = await VitalsEntry.findAll({
       where: { appointment_id: parseInt(appointment_id), clinic_id: clinicIdInt },

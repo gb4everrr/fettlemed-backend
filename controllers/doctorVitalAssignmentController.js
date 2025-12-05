@@ -2,12 +2,7 @@
 
 const { DoctorVitalAssignment, ClinicVitalConfig, ClinicAdmin, ClinicDoctor } = require('../models');
 
-const isClinicAdmin = async (userId, clinicId) => {
-  const admin = await ClinicAdmin.findOne({ 
-    where: { user_id: userId, clinic_id: clinicId} 
-  });
-  return !!admin;
-};
+
 
 // FIX: Parse clinic_id from req.body
 exports.assignVitalsToDoctor = async (req, res) => {
@@ -22,9 +17,6 @@ exports.assignVitalsToDoctor = async (req, res) => {
         return res.status(400).json({ error: 'Invalid clinic_doctor_id provided' });
     }
 
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Only clinic admins can assign vitals' });
-    }
 
     // Remove existing assignments
     await DoctorVitalAssignment.destroy({ where: { clinic_doctor_id: clinicDoctorIdInt } });
@@ -57,9 +49,7 @@ exports.getAvailableVitalsForAssignment = async (req, res) => {
         return res.status(400).json({ error: 'Invalid clinic_doctor_id provided' });
     }
 
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
 
     const vitals = await ClinicVitalConfig.findAll({
       attributes: ['id', 'clinic_id', 'vital_name', 'data_type', 'unit', 'is_active', 'is_required'],
@@ -96,9 +86,7 @@ exports.getDoctorAssignedVitals = async (req, res) => {
         return res.status(400).json({ error: 'Invalid clinic_doctor_id provided' });
     }
 
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+   
 
     const assignments = await DoctorVitalAssignment.findAll({
       where: { clinic_doctor_id: clinicDoctorIdInt },
@@ -129,9 +117,7 @@ exports.getLibraryWithDoctorAssignments = async (req, res) => {
         return res.status(400).json({ error: 'Invalid clinic_id provided' });
     }
 
-    if (!await isClinicAdmin(req.user.id, clinicIdInt)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+   
 
     // Step 1: Get all vitals from the clinic's library
     const vitalsLibrary = await ClinicVitalConfig.findAll({

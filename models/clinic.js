@@ -23,6 +23,20 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'UTC', 
       comment: 'IANA timezone name, e.g., "Asia/Kolkata" or "America/New_York"'
+    },
+    brandColor: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: '#2D5367',
+      field: 'brand_color'
+    },
+    parent_clinic_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'clinic',
+        key: 'id'
+      }
     }
   }, {
     tableName: 'clinic',
@@ -44,6 +58,14 @@ module.exports = (sequelize, DataTypes) => {
     Clinic.hasMany(models.Invoice, {
       foreignKey: 'clinic_id',
       as: 'invoices'
+    });
+    Clinic.hasMany(models.Clinic, {
+      foreignKey: 'parent_clinic_id',
+      as: 'branches'
+    });
+    Clinic.belongsTo(models.Clinic, {
+      foreignKey: 'parent_clinic_id',
+      as: 'parentClinic'
     });
     
   };

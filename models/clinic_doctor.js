@@ -47,6 +47,11 @@ module.exports = (sequelize, DataTypes) => {
     active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
+    },
+    assigned_role: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: 'DOCTOR' 
     }
   }, {
     tableName: 'clinic_doctor',

@@ -7,8 +7,7 @@ exports.addNote = async (req, res) => {
     const appointment = await Appointment.findByPk(appointment_id);
     if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
-    const authorized = await isClinicDoctor(req.user.id, appointment.clinic_id);
-    if (!authorized) return res.status(403).json({ error: 'Unauthorized' });
+ 
 
     const note = await ConsultationNote.create({
       appointment_id,
@@ -29,9 +28,6 @@ exports.getNotesByAppointment = async (req, res) => {
   try {
     const note = await ConsultationNote.findOne({ where: { appointment_id } });
     if (!note) return res.status(404).json({ error: 'No note found' });
-
-    const authorized = await isClinicDoctor(req.user.id, note.clinic_id);
-    if (!authorized) return res.status(403).json({ error: 'Unauthorized' });
 
     res.json(note);
   } catch (err) {

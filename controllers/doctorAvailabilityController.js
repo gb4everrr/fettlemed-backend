@@ -3,31 +3,7 @@ const { generateSlots, removeSlotsByDate, generateSlotsFor3Months } = require('.
 // FIX: Updated for date-fns-tz v3.x - function names changed
 const { fromZonedTime: zonedTimeToUtc, format } = require('date-fns-tz');
 
-// The authorization function is updated to use 'clinicDoctorId'
-const isAuthorizedForAvailability = async (userId, clinicDoctorId, clinicId) => {
-  console.log(`[AUTH] Checking authorization for user ${userId}, clinic doctor ${clinicDoctorId}, clinic ${clinicId}`);
-  
-  // Check if user is clinic admin for this clinic
-  const isAdmin = await ClinicAdmin.findOne({ 
-    where: { user_id: userId, clinic_id: clinicId } 
-  });
-  if (isAdmin) {
-    console.log(`[AUTH] User ${userId} is admin for clinic ${clinicId}`);
-    return { role: 'admin', authorized: true };
-  }
-  
-  // Check if user is the doctor themselves, using the ClinicDoctor ID
-  const doctor = await ClinicDoctor.findOne({
-    where: { id: clinicDoctorId, global_doctor_id: userId, active: true }
-  });
-  if (doctor) {
-    console.log(`[AUTH] User ${userId} is clinic doctor ${clinicDoctorId}`);
-    return { role: 'doctor', authorized: true };
-  }
-  
-  console.log(`[AUTH] User ${userId} is not authorized for clinic doctor ${clinicDoctorId} in clinic ${clinicId}`);
-  return { role: null, authorized: false };
-};
+
 
 exports.addAvailability = async (req, res) => {
   const { clinic_doctor_id, clinic_id, weekday, start_time, end_time } = req.body;
@@ -36,11 +12,7 @@ exports.addAvailability = async (req, res) => {
   console.log(`[addAvailability] Data: weekday=${weekday}, start_time=${start_time}, end_time=${end_time}`);
 
   try {
-    const auth = await isAuthorizedForAvailability(req.user.id, clinic_doctor_id, clinic_id);
-    if (!auth.authorized) {
-      console.error(`[addAvailability] Unauthorized attempt by user ${req.user.id}.`);
-      return res.status(403).json({ error: 'Unauthorized - must be clinic admin or the doctor' });
-    }
+   
     
     // Verify doctor belongs to clinic using the ClinicDoctor ID
     const doctor = await ClinicDoctor.findOne({
@@ -77,10 +49,7 @@ exports.updateAvailability = async (req, res) => {
   // Updated to use clinic_doctor_id
   const { clinic_doctor_id, clinic_id, ...updates } = req.body;
   try {
-    const auth = await isAuthorizedForAvailability(req.user.id, clinic_doctor_id, clinic_id);
-    if (!auth.authorized) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
     
     // Updated where clause to use clinic_doctor_id
     await DoctorAvailability.update(updates, { where: { id, clinic_id, clinic_doctor_id } });
@@ -96,10 +65,7 @@ exports.getAvailability = async (req, res) => {
   const { clinic_doctor_id, clinic_id } = req.query;
   try {
     if (clinic_id) {
-      const auth = await isAuthorizedForAvailability(req.user.id, clinic_doctor_id, clinic_id);
-      if (!auth.authorized) {
-        return res.status(403).json({ error: 'Unauthorized' });
-      }
+      
       // Updated where clause to use clinic_doctor_id
       const records = await DoctorAvailability.findAll({ 
         where: { clinic_doctor_id, clinic_id, active: true } 
@@ -130,10 +96,7 @@ exports.deleteAvailability = async (req, res) => {
   // Updated to use clinic_doctor_id
   const { clinic_doctor_id, clinic_id } = req.query;
   try {
-    const auth = await isAuthorizedForAvailability(req.user.id, clinic_doctor_id, clinic_id);
-    if (!auth.authorized) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
     
     // Updated where clause to use clinic_doctor_id
     await DoctorAvailability.update({ active: false }, { where: { id, clinic_id, clinic_doctor_id } });
@@ -147,10 +110,7 @@ exports.addException = async (req, res) => {
   const { clinic_doctor_id, clinic_id, date, start_time, end_time, is_available, note } = req.body;
   
   try {
-    const auth = await isAuthorizedForAvailability(req.user.id, clinic_doctor_id, clinic_id);
-    if (!auth.authorized) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+   
     
     // 1. Fetch the clinic to get its timezone
     const clinic = await Clinic.findByPk(clinic_id);
@@ -194,10 +154,7 @@ exports.addException = async (req, res) => {
 exports.getExceptions = async (req, res) => {
   const { clinic_doctor_id, clinic_id } = req.query;
   try {
-    const auth = await isAuthorizedForAvailability(req.user.id, clinic_doctor_id, clinic_id);
-    if (!auth.authorized) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
     
     const exceptions = await AvailabilityException.findAll({ 
       where: { clinic_doctor_id, clinic_id },
@@ -230,11 +187,7 @@ exports.deleteException = async (req, res) => {
       });
     }
 
-    const auth = await isAuthorizedForAvailability(req.user.id, clinic_doctor_id, clinic_id);
-    if (!auth.authorized) {
-      console.error(`[deleteException] Unauthorized attempt by user ${req.user.id}`);
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
+    
     
     const exception = await AvailabilityException.findOne({ 
       where: { 

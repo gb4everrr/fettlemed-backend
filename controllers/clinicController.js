@@ -10,7 +10,7 @@ exports.createClinic = async (req, res) => {
     await ClinicAdmin.create({
       user_id,
       clinic_id: clinic.id,
-      role: 'Owner', // Assigning 'Owner' role upon clinic creation
+      role: 'OWNER', // Assigning 'Owner' role upon clinic creation
       active: true
     });
 
@@ -21,43 +21,90 @@ exports.createClinic = async (req, res) => {
   }
 };
 
+exports.createBranch = async (req, res) => {
+  const { clinic_id } = req.params;
+  const { name, address, email, phone } = req.body;
+  const user_id = req.user.id;
+
+  try {
+    // 1. Create the new clinic linked to the parent
+    const branch = await Clinic.create({
+      name,
+      address,
+      email,
+      phone,
+      parent_clinic_id: clinic_id
+    });
+
+    // 2. IMPORTANT: Give the Owner access to this new branch immediately
+    // so it appears in their "Switch Clinic" dropdown.
+    await ClinicAdmin.create({
+      user_id,
+      clinic_id: branch.id,
+      role: 'OWNER', 
+      active: true
+    });
+
+    res.status(201).json({ message: 'Branch created successfully', branch });
+  } catch (err) {
+    console.error('Error creating branch:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// --- NEW: Get Branches for a specific Parent ---
+exports.getClinicBranches = async (req, res) => {
+  const { clinic_id } = req.params; // Parent Clinic ID
+  try {
+    const branches = await Clinic.findAll({
+      where: { parent_clinic_id: clinic_id }
+    });
+    res.json(branches);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // NEW: Function to handle updating a clinic
 exports.updateClinic = async (req, res) => {
   const { id } = req.params; // Clinic ID from URL parameter
-  const { name, address, email, phone } = req.body; // Updatable fields
-  const user_id = req.user.id; // User ID from authenticated JWT
+  const { name, address, email, phone,brandColor } = req.body; // Updatable fields
 
   try {
-    // First, verify that the logged-in user is an admin/owner of this clinic
-    const clinicAdmin = await ClinicAdmin.findOne({
-      where: {
-        clinic_id: id,
-        user_id: user_id,
-        // Optional: add role: 'Owner' if only owners can update the primary clinic details
-      }
-    });
-
-    if (!clinicAdmin) {
-      return res.status(403).json({ message: 'Unauthorized: You do not have permission to update this clinic.' });
-    }
-
-    // Now, update the clinic
     const [updatedRowsCount] = await Clinic.update(
-      { name, address, email, phone },
+      { name, address, email, phone, brandColor },
       { where: { id: id } }
     );
 
     if (updatedRowsCount === 0) {
-      // This means clinic was not found or no fields were actually changed
       return res.status(404).json({ message: 'Clinic not found or no changes were applied.' });
     }
 
-    const updatedClinic = await Clinic.findByPk(id); // Fetch the updated record
+    const updatedClinic = await Clinic.findByPk(id);
     res.status(200).json({ message: 'Clinic updated successfully', clinic: updatedClinic });
 
   } catch (err) {
-    console.error('Error updating clinic:', err); // Log the error for debugging
-    res.status(500).json({ error: err.message || 'Internal server error during clinic update.' });
+    console.error('Error updating clinic:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getClinicDetails = async (req, res) => {
+  const { id } = req.params; 
+  const user_id = req.user.id;
+
+  try {
+    
+    const clinic = await Clinic.findByPk(id);
+    if (!clinic) {
+      return res.status(404).json({ error: 'Clinic not found' });
+    }
+    
+    res.json(clinic);
+    
+  } catch (err) {
+    console.error('Error in getClinicDetails:', err);
+    res.status(500).json({ error: err.message });
   }
 };
 
