@@ -1,7 +1,6 @@
-const { Appointment, AppointmentSlot, ClinicPatient, User, Invoice, InvoiceService, DoctorProfile,  ConsultationNote, Prescription, VitalsEntry, VitalsRecordedValue, ClinicVitalConfig  } = require('../models');
+const { Appointment, AppointmentSlot, ClinicPatient, User, Invoice, InvoiceService, DoctorProfile, ConsultationNote, Prescription, VitalsEntry, VitalsRecordedValue, ClinicVitalConfig, ClinicDoctor, Clinic, DoctorAvailability, AvailabilityException,ClinicAdmin } = require('../models');
 const { Op } = require('sequelize');
-const { ClinicDoctor, Clinic } = require('../models');
-const { DoctorAvailability, AvailabilityException } = require('../models');
+
 const { isDoctorOfClinic } = require('../utils/authorization');
 
 
@@ -102,60 +101,107 @@ exports.createAvailabilityException = async (req, res) => {
 exports.getDashboardStats = async (req, res) => {
     try {
         const doctorId = req.user.id;
-        const doctor = await User.findByPk(doctorId, {
-            attributes: ['first_name', 'last_name']
-        });
+        const now = new Date();
+        
+        // Date Ranges
+        const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+        
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-        if (!doctor) {
-            return res.status(404).json({ error: 'Doctor user not found.' });
-        }
-
-        // 1. Find all active clinic associations for the doctor
+        // 1. Get Clinic Associations
         const clinicAssociations = await ClinicDoctor.findAll({
             where: { global_doctor_id: doctorId, active: true },
-            include: [{
-                model: Clinic,
-                as: 'Clinic', // THIS IS THE FIX: Added the alias to match the association
-                attributes: ['id', 'name', 'address']
-            }]
+            include: [{ model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'timezone'] }]
         });
-
-        if (!clinicAssociations || clinicAssociations.length === 0) {
-            return res.json({
-                clinics: [],
-                upcomingAppointmentsCount: 0,
-                uniquePatientsCount: 0
-            });
-        }
-
+        
         const clinicDoctorIds = clinicAssociations.map(ca => ca.id);
-        const clinics = clinicAssociations.map(a => a.Clinic);
 
-        // 2. Fetch upcoming appointments for this doctor across all their clinics
-        const upcomingAppointments = await Appointment.findAll({
+        // 2. Fetch Today's Schedule
+        const todayAppointments = await Appointment.findAll({
             where: {
-                clinic_doctor_id: {
-                    [Op.in]: clinicDoctorIds
-                },
-                // NOTE: This logic assumes you have 'appointment_date' and 'status' fields.
-                // Please adjust if your schema is different.
-                // appointment_date: { [Op.gte]: new Date() },
-                // status: 'scheduled'
+                clinic_doctor_id: { [Op.in]: clinicDoctorIds },
+                datetime_start: { [Op.between]: [todayStart, todayEnd] }
             },
-            attributes: ['clinic_patient_id'] // Only need patient ID for counting
+            include: [
+                { model: ClinicPatient, as: 'patient', attributes: ['first_name', 'last_name'] },
+                { model: Clinic, as: 'clinic', attributes: ['name'] }
+            ],
+            order: [['datetime_start', 'ASC']]
         });
 
-        const upcomingAppointmentsCount = upcomingAppointments.length;
-
-        // 3. Count unique patients from those appointments
-        const uniquePatientIds = [...new Set(upcomingAppointments.map(a => a.clinic_patient_id))];
-        const uniquePatientsCount = uniquePatientIds.length;
-
-        res.json({
-            clinics,
-            upcomingAppointmentsCount,
-            uniquePatientsCount
+        // 3. Calculate Insights (Counts for the whole month)
+        const allAppointmentsMonth = await Appointment.findAll({
+             where: {
+                clinic_doctor_id: { [Op.in]: clinicDoctorIds },
+                datetime_start: { [Op.between]: [monthStart, monthEnd] }
+            },
+            attributes: ['status']
         });
+
+        const insights = {
+            completed: allAppointmentsMonth.filter(a => a.status === 1).length,
+            scheduled: allAppointmentsMonth.filter(a => a.status === 0).length,
+            canceled: allAppointmentsMonth.filter(a => a.status === 2).length,
+        };
+
+        // 4. Calculate REAL Revenue
+        // Logic: Find appointments -> Find InvoiceServices linked to them -> Sum Price
+        
+        // Helper to sum revenue for a date range
+        const calculateRevenue = async (start, end) => {
+            const appointments = await Appointment.findAll({
+                where: { 
+                    clinic_doctor_id: { [Op.in]: clinicDoctorIds }, 
+                    datetime_start: { [Op.between]: [start, end] } 
+                },
+                attributes: ['id']
+            });
+            const apptIds = appointments.map(a => a.id);
+            
+            if (apptIds.length === 0) return 0;
+
+            const total = await InvoiceService.sum('price', {
+                where: { appointment_id: { [Op.in]: apptIds } }
+            });
+            return total || 0;
+        };
+
+        const revenueToday = await calculateRevenue(todayStart, todayEnd);
+        const revenueMonth = await calculateRevenue(monthStart, monthEnd);
+
+        // 5. Construct Response
+        const dashboardData = {
+            doctor: {
+                firstName: req.user.first_name,
+                lastName: req.user.last_name
+            },
+            schedule: todayAppointments.map(appt => ({
+                id: appt.id,
+                patientName: `${appt.patient.first_name} ${appt.patient.last_name}`,
+                time: appt.datetime_start, 
+                type: 'Consultation', 
+                clinicName: appt.clinic.name,
+                status: appt.status
+            })),
+            insights,
+            revenue: {
+                today: revenueToday,
+                mtd: revenueMonth
+            },
+            // Mocking alerts/tasks as these tables don't exist yet
+            alerts: [
+                { id: 1, type: 'critical', message: 'Critical Lab Value: P. Smith', subtext: 'Potassium 6.2 mmol/L' },
+                { id: 2, type: 'warning', message: 'New Allergy: A. Johnson', subtext: 'Penicillin - Anaphylaxis' },
+            ],
+            tasks: [
+                { id: 1, title: 'Review Lab Results for J. Doe', priority: 'high' },
+                { id: 2, title: 'Sign 3 Pending Notes', priority: 'normal' },
+            ]
+        };
+
+        res.json(dashboardData);
 
     } catch (err) {
         console.error('Error fetching doctor dashboard stats:', err);
@@ -214,7 +260,9 @@ exports.getUnifiedAvailability = async (req, res) => {
 
 exports.getAssociatedClinicsDetails = async (req, res) => {
     try {
-        const doctorId = req.user.id;
+        const doctorId = req.user.id; // This is the User ID (global)
+
+        // 1. Fetch Clinical Associations (as before)
         const associations = await ClinicDoctor.findAll({
             where: { global_doctor_id: doctorId },
             include: [{
@@ -225,12 +273,35 @@ exports.getAssociatedClinicsDetails = async (req, res) => {
             order: [['active', 'DESC'], ['started_date', 'DESC']]
         });
 
+        // 2. Extract Clinic IDs to fetch roles in bulk
+        const clinicIds = associations.map(a => a.clinic_id);
+
+        // 3. Fetch RBAC Roles from ClinicAdmin
+        // This table holds the actual permissions (OWNER, PARTNER, etc.)
+        const adminRecords = await ClinicAdmin.findAll({
+            where: {
+                user_id: doctorId,
+                clinic_id: { [Op.in]: clinicIds },
+                active: true
+            },
+            attributes: ['clinic_id', 'role']
+        });
+
+        // 4. Create a Lookup Map: { clinic_id: 'ROLE_NAME' }
+        const roleMap = {};
+        adminRecords.forEach(record => {
+            roleMap[record.clinic_id] = record.role;
+        });
+
+        // 5. Merge Data
         const detailedClinics = associations.map(a => ({
             clinic_doctor_id: a.id,
             clinic: a.Clinic,
             specialization: a.specialization,
             started_date: a.started_date,
-            active: a.active
+            active: a.active,
+            // Use the mapped role, or fallback to 'DOCTOR_VISITING' if missing
+            assigned_role: roleMap[a.clinic_id] || 'DOCTOR_VISITING'
         }));
         
         res.json(detailedClinics);

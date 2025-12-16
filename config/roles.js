@@ -41,7 +41,8 @@ const ROLES = {
       'view_financials',       // /api/analytics/financial
       'view_analytics_doc',    // /api/analytics/doctor-performance
       'view_all_schedule',     // /api/appointment/ (get all)
-      'manage_appointments'    // /api/appointment/ (create/update)
+      'manage_appointments' ,
+      'view_clinic_details'   // /api/appointment/ (create/update)
     ]
   },
 
@@ -49,6 +50,8 @@ const ROLES = {
   DOCTOR_VISITING: {
     inherits: [],
     permissions: [
+      'manage_appointments',
+      'manage_patients',
       'view_own_schedule',     // /api/doctor/appointments
       'view_assigned_patients',// /api/doctor/my-patients-details
       'create_prescription',   // /api/prescription

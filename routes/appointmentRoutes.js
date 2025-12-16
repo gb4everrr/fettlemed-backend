@@ -14,5 +14,6 @@ router.delete('/:id', checkPermission('manage_appointments'), appointmentControl
 
 router.get('/', checkPermission('view_all_schedule'), appointmentController.getAppointments);
 router.get('/slots', checkPermission('manage_appointments'), appointmentController.getAvailableSlotsForAdmin);
+router.get('/my', checkPermission('view_own_schedule'), appointmentController.getAppointments);
 
 module.exports = router;
