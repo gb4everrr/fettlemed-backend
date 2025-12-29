@@ -1,4 +1,4 @@
-const { Appointment, AppointmentSlot, ClinicPatient, User, Invoice, InvoiceService, DoctorProfile, ConsultationNote, Prescription, VitalsEntry, VitalsRecordedValue, ClinicVitalConfig, ClinicDoctor, Clinic, DoctorAvailability, AvailabilityException,ClinicAdmin } = require('../models');
+const { Appointment, AppointmentSlot, ClinicPatient, User, Invoice, InvoiceService, DoctorProfile, ConsultationNote, Prescription, VitalsEntry, VitalsRecordedValue, ClinicVitalConfig, ClinicDoctor, Clinic, DoctorAvailability, AvailabilityException,ClinicAdmin, Service, Task, PatientAllergy } = require('../models');
 const { Op } = require('sequelize');
 
 const { isDoctorOfClinic } = require('../utils/authorization');
@@ -529,6 +529,88 @@ exports.getDoctorInvoices = async (req, res) => {
     }
 };
 
+exports.getDoctorInvoiceDetails = async (req, res) => {
+    try {
+        const doctorId = req.user.id;
+        const invoiceId = parseInt(req.params.id);
+
+        // 1. Find all clinic-specific doctor profiles for the logged-in user
+        const clinicDoctorProfiles = await ClinicDoctor.findAll({
+            where: { global_doctor_id: doctorId, active: true },
+            attributes: ['id']
+        });
+
+        if (!clinicDoctorProfiles || clinicDoctorProfiles.length === 0) {
+            return res.status(404).json({ error: 'No clinic associations found.' });
+        }
+
+        const clinicDoctorIds = clinicDoctorProfiles.map(cdp => cdp.id);
+
+        // 2. Find appointments associated with these clinic-doctor profiles
+        const doctorAppointments = await Appointment.findAll({
+            where: { clinic_doctor_id: { [Op.in]: clinicDoctorIds } },
+            attributes: ['id']
+        });
+
+        if (!doctorAppointments || doctorAppointments.length === 0) {
+            return res.status(404).json({ error: 'No appointments found.' });
+        }
+
+        const appointmentIds = doctorAppointments.map(app => app.id);
+
+        // 3. Find InvoiceService entries linked to those appointments and this specific invoice
+        const invoiceServices = await InvoiceService.findAll({
+            where: { 
+                appointment_id: { [Op.in]: appointmentIds },
+                invoice_id: invoiceId
+            },
+            attributes: ['invoice_id']
+        });
+
+        // 4. Verify this doctor has access to this invoice
+        if (!invoiceServices || invoiceServices.length === 0) {
+            return res.status(403).json({ error: 'You do not have access to this invoice.' });
+        }
+
+        // 5. Fetch the full invoice with all details
+        const invoice = await Invoice.findByPk(invoiceId, {
+            include: [
+                { 
+                    model: Clinic, 
+                    as: 'clinic', 
+                    attributes: ['name'] 
+                },
+                { 
+                    model: ClinicPatient, 
+                    as: 'patient', 
+                    attributes: ['first_name', 'last_name', 'email', 'phone_number'] 
+                },
+                { 
+                    model: InvoiceService, 
+                    as: 'services',
+                    include: [
+                        {
+                            model: Service,
+                            as: 'service',
+                            attributes: ['name', 'price']
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!invoice) {
+            return res.status(404).json({ error: 'Invoice not found.' });
+        }
+
+        res.json(invoice);
+
+    } catch (err) {
+        console.error('Error fetching doctor invoice details:', err);
+        res.status(500).json({ error: 'Failed to fetch invoice details.' });
+    }
+};
+
 exports.getDoctorProfile = async (req, res) => {
     try {
         const doctorId = req.user.id;
@@ -738,5 +820,142 @@ exports.addOrUpdateConsultationNote = async (req, res) => {
     } catch (err) {
         console.error('Error saving consultation note:', err);
         res.status(500).json({ error: 'Failed to save note.' });
+    }
+};
+
+exports.getDoctorTasks = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Fetch incomplete tasks first, then completed ones (limit completed to save bandwidth)
+    const tasks = await Task.findAll({
+      where: { user_id: userId },
+      order: [
+        ['is_completed', 'ASC'], // Pending tasks first
+        ['priority', 'DESC'],    // High priority next
+        ['created_at', 'DESC']
+      ],
+      attributes: ['id', 'title', 'priority', 'is_completed', 'due_date'] // Select only what UI needs
+    });
+
+    res.json(tasks);
+  } catch (err) {
+    console.error('Error fetching tasks:', err);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+};
+
+// POST /tasks
+exports.createTask = async (req, res) => {
+  try {
+    const { title, priority, due_date } = req.body;
+    
+    const newTask = await Task.create({
+      user_id: req.user.id,
+      title,
+      priority: priority || 'normal',
+      due_date
+    });
+
+    res.status(201).json(newTask);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// PUT /tasks/:id - Toggle status or update details
+exports.updateTask = async (req, res) => {
+  try {
+    const taskId = req.params.id;
+    const { title, priority, is_completed, due_date } = req.body;
+
+    const task = await Task.findOne({ 
+      where: { id: taskId, user_id: req.user.id } 
+    });
+
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+
+    // Update fields if they are provided in the body
+    if (title !== undefined) task.title = title;
+    if (priority !== undefined) task.priority = priority;
+    if (is_completed !== undefined) task.is_completed = is_completed;
+    if (due_date !== undefined) task.due_date = due_date;
+
+    await task.save();
+    res.json(task);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// DELETE /tasks/:id
+exports.deleteTask = async (req, res) => {
+  try {
+    const deleted = await Task.destroy({
+      where: { id: req.params.id, user_id: req.user.id }
+    });
+
+    if (!deleted) return res.status(404).json({ error: 'Task not found' });
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getPatientAllergies = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const allergies = await PatientAllergy.findAll({
+            where: { clinic_patient_id: patientId },
+            order: [['created_at', 'DESC']]
+        });
+        res.json(allergies);
+    } catch (err) {
+        console.error("Error fetching allergies:", err);
+        res.status(500).json({ error: 'Failed to fetch allergies' });
+    }
+};
+
+// POST /doctor/patient/:patientId/allergies
+exports.addPatientAllergy = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const { allergy_name, severity, reaction } = req.body;
+        
+        // Basic duplicate check
+        const existing = await PatientAllergy.findOne({
+            where: { clinic_patient_id: patientId, allergy_name }
+        });
+
+        if (existing) {
+            return res.status(400).json({ error: 'This allergy is already recorded for this patient.' });
+        }
+
+        const newAllergy = await PatientAllergy.create({
+            clinic_patient_id: patientId,
+            allergy_name,
+            severity: severity || 'unknown',
+            reaction,
+            recorded_by: req.user.id
+        });
+
+        res.status(201).json(newAllergy);
+    } catch (err) {
+        console.error("Error adding allergy:", err);
+        res.status(500).json({ error: 'Failed to add allergy' });
+    }
+};
+
+// DELETE /doctor/allergies/:id
+exports.deletePatientAllergy = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await PatientAllergy.destroy({ where: { id } });
+        
+        if (!result) return res.status(404).json({ error: 'Allergy not found' });
+        
+        res.status(200).json({ message: 'Allergy removed' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to remove allergy' });
     }
 };

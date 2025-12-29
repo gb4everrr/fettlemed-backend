@@ -1,4 +1,4 @@
-const { Service, Invoice, InvoiceService, ClinicAdmin, ClinicDoctor, ClinicPatient } = require('../models');
+const { Service, Invoice, InvoiceService, ClinicAdmin, ClinicDoctor, ClinicPatient,Clinic } = require('../models');
 
 
 
@@ -117,16 +117,41 @@ exports.createInvoice = async (req, res) => {
 exports.getInvoiceDetails = async (req, res) => {
   const { id } = req.params;
   try {
-    const invoice = await Invoice.findByPk(id);
+    const invoice = await Invoice.findByPk(id, {
+      include: [
+        {
+          model: Clinic,
+          as: 'clinic',
+          attributes: ['id', 'name', 'address', 'email', 'phone']
+        },
+        {
+          model: ClinicPatient,
+          as: 'patient',
+          attributes: ['id', 'first_name', 'last_name', 'email', 'phone_number']
+        },
+        {
+          model: InvoiceService,
+          as: 'services',
+          attributes: ['id', 'invoice_id', 'service_id', 'price', 'appointment_id'],
+          include: [
+            {
+              model: Service,
+              as: 'service',
+              attributes: ['id', 'name', 'price']
+            }
+          ]
+        }
+      ]
+    });
+    
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     
-    
-    
-    const services = await InvoiceService.findAll({ where: { invoice_id: id } });
-    res.json({ invoice, services });
+    // Return the invoice directly at the top level so frontend can access it easily
+    res.json(invoice);
   } catch (err) {
+    console.error('Error in getInvoiceDetails:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -135,18 +160,41 @@ exports.listInvoices = async (req, res) => {
   const { clinic_id, page = 1, limit = 10 } = req.query;
   
   try {
-    
-
     const offset = (page - 1) * limit;
     
     const { count, rows: invoices } = await Invoice.findAndCountAll({
       where: { clinic_id },
+      // ADD THIS INCLUDE BLOCK
+      include: [
+        {
+          model: Clinic,
+          as: 'clinic',
+          attributes: ['id', 'name']
+        },
+        {
+          model: ClinicPatient,
+          as: 'patient',
+          attributes: ['id', 'first_name', 'last_name', 'email', 'phone_number']
+        },
+        {
+          model: InvoiceService,
+          as: 'services',
+          attributes: ['id', 'service_id', 'price'],
+          include: [
+            {
+              model: Service,
+              as: 'service',
+              attributes: ['name']
+            }
+          ]
+        }
+      ],
       order: [['invoice_date', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
 
-    // Get patient and service details separately to avoid association issues
+    // Get patient and service details separately (KEEP EXISTING LOGIC)
     const invoicesWithDetails = await Promise.all(
       invoices.map(async (invoice) => {
         try {
@@ -177,6 +225,8 @@ exports.listInvoices = async (req, res) => {
             clinic_patient_id: invoice.clinic_patient_id,
             invoice_date: invoice.invoice_date,
             total_amount: invoice.total_amount,
+            // ADD THIS: Include clinic from the eager-loaded data
+            clinic: invoice.clinic || null,
             patient: patient ? {
               id: patient.id,
               first_name: patient.first_name || '',
@@ -201,6 +251,8 @@ exports.listInvoices = async (req, res) => {
             clinic_patient_id: invoice.clinic_patient_id,
             invoice_date: invoice.invoice_date,
             total_amount: invoice.total_amount,
+            // ADD THIS: Include clinic even in error case
+            clinic: invoice.clinic || null,
             patient: {
               id: null,
               first_name: 'Unknown',

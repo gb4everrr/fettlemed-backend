@@ -22,7 +22,11 @@ const ROLES = {
       'delete_patient',        // /api/clinic-user/clinic-patient (delete)
       'manage_vitals_library', //api/clinic-vitals/library/*  
       'view_clinic_details',
-      'manage_availability' 
+      'manage_availability',
+      'process_payments',
+      'view_all_schedule',
+      'view_vitals_settings',
+      'manage_vitals_library' 
     ]
   },
 
@@ -31,7 +35,10 @@ const ROLES = {
   // 3a. Doctor (Owner): Full Admin + Clinical Tools
   DOCTOR_OWNER: {
     inherits: ['CLINIC_ADMIN', 'DOCTOR_PARTNER'], 
-    permissions: [] 
+    permissions: ['manage_vitals_library', // <--- REQUIRED to save assignments
+       'manage_templates',
+       'view_analytics_clinical',
+       'manage_clinic_profile'] 
   },
 
   // 3b. Doctor (Partner): Clinical + Financial View (No Deletes)
@@ -42,7 +49,12 @@ const ROLES = {
       'view_analytics_doc',    // /api/analytics/doctor-performance
       'view_all_schedule',     // /api/appointment/ (get all)
       'manage_appointments' ,
-      'view_clinic_details'   // /api/appointment/ (create/update)
+      'view_clinic_details',   // /api/appointment/ (create/update)
+      'manage_invoices',       // /api/clinic-invoice/invoice/create
+      'view_services',  // /api/clinic-invoice/service/list
+      'process_payments',
+      'manage_vitals_library',
+      'view_vitals_settings'     
     ]
   },
 
@@ -58,7 +70,10 @@ const ROLES = {
       'view_prescription',     // /api/prescription/:id
       'manage_medical_records',// /api/consultation-note
       'manage_availability',   // /api/doctor/availability
-      'view_patient_history'   // /api/doctor-vitals/patient
+      'view_patient_history',
+      'view_vitals_settings',
+      'manage_vitals_library',
+      'manage_medical_records'
     ]
   },
 
@@ -73,7 +88,9 @@ const ROLES = {
       'view_all_schedule',     // /api/appointment/
       'manage_invoices',       // /api/clinic-invoice/invoice/create
       'view_services',         // /api/clinic-invoice/service/list
-      'manage_vitals_entry'    // /api/clinic-vitals/entry/submit
+      'manage_vitals_entry',
+      'manage_vitals_library',
+      'view_vitals_settings'   // /api/clinic-vitals/entry/submit
     ]
   },
 
@@ -84,7 +101,10 @@ const ROLES = {
       'manage_vitals_entry',   // /api/clinic-vitals/entry/submit
       'view_patient_history',  // /api/clinic-vitals/entry/history
       'manage_medical_records',// /api/consultation-note
-      'view_all_schedule'      // /api/appointment/
+      'view_all_schedule',
+      'manage_vitals_library',
+      'view_vitals_settings',
+      'manage_medical_records'     // /api/appointment/
     ]
   }
 };
