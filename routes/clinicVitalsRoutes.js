@@ -30,6 +30,7 @@ router.get('/assignment-manager', checkPermission('view_vitals_settings'), docto
 router.post('/entry/submit', checkPermission('manage_vitals_entry'), clinicVitalsController.submitPatientVitals);
 router.get('/entry/history/:clinic_patient_id', checkPermission('view_patient_history'), clinicVitalsController.getPatientVitals);
 router.get('/appointment/:appointment_id', checkPermission('view_patient_history'), clinicVitalsController.getVitalsForAppointment);
+router.get('/patient/latest', checkPermission('view_patient_history'), clinicVitalsController.getLatestPatientVitals);
 
 // --- Templates ---
 router.get('/templates/all', checkPermission('view_vitals_settings'), clinicVitalTemplateController.getTemplates);

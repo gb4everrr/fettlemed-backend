@@ -267,3 +267,35 @@ exports.getVitalsForAppointment = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getLatestPatientVitals = async (req, res) => {
+  const { clinic_id, patient_id } = req.query;
+
+  try {
+    // Find the most recent entry for this patient
+    const latestEntry = await VitalsEntry.findOne({
+      where: { 
+        clinic_id, 
+        clinic_patient_id: patient_id 
+      },
+      include: [{
+        // FIX: Use the 'VitalsValue' model here, NOT 'VitalsEntry'
+        model: VitalsRecordedValue, 
+        as: 'values',
+        include: [{ 
+            model: ClinicVitalConfig, 
+            as: 'config', 
+            attributes: ['vital_name', 'unit'] 
+        }]
+      }],
+      order: [['entry_date', 'DESC']] // Get the newest one
+    });
+
+    if (!latestEntry) return res.json(null);
+
+    res.json(latestEntry);
+  } catch (err) {
+    console.error("Latest Vitals Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};

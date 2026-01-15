@@ -72,8 +72,7 @@ const ROLES = {
       'manage_availability',   // /api/doctor/availability
       'view_patient_history',
       'view_vitals_settings',
-      'manage_vitals_library',
-      'manage_medical_records'
+      'manage_vitals_library'
     ]
   },
 
@@ -104,7 +103,6 @@ const ROLES = {
       'view_all_schedule',
       'manage_vitals_library',
       'view_vitals_settings',
-      'manage_medical_records'     // /api/appointment/
     ]
   }
 };

@@ -8,14 +8,20 @@ module.exports = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
+     timezone: '+00:00',
+    dialectOptions: {
+      useUTC: true,
+    },
   },
   production: {
     use_env_variable: 'DATABASE_URL',
     dialect: 'postgres',
+    timezone: '+00:00',
     dialectOptions: {
+      useUTC: true,
       ssl: {
         require: true,
-        rejectUnauthorized: false, 
+        rejectUnauthorized: false,
       },
     },
   },
