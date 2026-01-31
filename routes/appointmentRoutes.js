@@ -18,4 +18,6 @@ router.get('/my', checkPermission('view_own_schedule'), appointmentController.ge
 
 router.put('/:id/check-in', checkPermission('manage_appointments'), appointmentController.checkInPatient);
 
+
+
 module.exports = router;

@@ -2,6 +2,7 @@ const { User, ClinicDoctor, ClinicPatient, ClinicAdmin, DoctorAvailability, Avai
 const bcrypt = require('bcrypt');
 const { sequelize } = require('../models'); 
 const { Op } = require('sequelize');
+const { calculateTodayAvailability } = require('../utils/calculateTodayAvailability');
 
 const getDoctorRole = async (userId, clinicId) => {
   if (!userId) return null; // Ghost profile has no role yet
@@ -468,4 +469,92 @@ exports.updateStaffPermissions = async (req, res) => {
     console.error('Error updating permissions:', err);
     res.status(500).json({ error: err.message });
   }
+};
+
+exports.getDoctorsAvailableNow = async (req, res) => {
+    const { clinic_id } = req.query;
+    
+    try {
+        if (!clinic_id) {
+            return res.status(400).json({ error: 'clinic_id is required' });
+        }
+
+        // 1. Get clinic to access timezone
+        const clinic = await Clinic.findByPk(clinic_id);
+        if (!clinic) {
+            return res.status(404).json({ error: 'Clinic not found' });
+        }
+        const clinicTimezone = clinic.timezone || 'Asia/Kolkata';
+
+        // 2. Get current time in clinic timezone
+        const now = new Date();
+        const timeFormatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: clinicTimezone,
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        const currentTimeString = timeFormatter.format(now); // "14:30"
+        const [currentHour, currentMinute] = currentTimeString.split(':').map(Number);
+        const currentTotalMinutes = (currentHour * 60) + currentMinute;
+
+        // 3. Fetch all active doctors
+        const doctors = await ClinicDoctor.findAll({
+            where: { 
+                clinic_id: clinic_id, 
+                active: true 
+            },
+            // Include any associations you need (e.g., user info)
+        });
+
+        // 4. Calculate today's availability for each doctor
+        const doctorsWithAvailability = await Promise.all(
+            doctors.map(async (doctor) => {
+                const doctorData = doctor.toJSON();
+                
+                // Calculate today's availability
+                const todayAvailability = await calculateTodayAvailability(
+                    doctor.id, 
+                    clinic_id, 
+                    clinicTimezone
+                );
+                
+                return {
+                    ...doctorData,
+                    is_available_today: todayAvailability.is_available_today,
+                    start_time: todayAvailability.start_time,
+                    end_time: todayAvailability.end_time
+                };
+            })
+        );
+
+        // 5. Filter to only doctors available RIGHT NOW
+        const availableNow = doctorsWithAvailability.filter(doctor => {
+            // Must be available today
+            if (!doctor.is_available_today) return false;
+            
+            // Must have shift times
+            if (!doctor.start_time || !doctor.end_time) return false;
+            
+            // Parse shift times
+            const [startHour, startMinute] = doctor.start_time.split(':').map(Number);
+            const [endHour, endMinute] = doctor.end_time.split(':').map(Number);
+            
+            const startTotalMinutes = (startHour * 60) + startMinute;
+            const endTotalMinutes = (endHour * 60) + endMinute;
+            
+            // Allow 30-minute early check-in buffer
+            const bufferMinutes = 30;
+            const effectiveStart = startTotalMinutes - bufferMinutes;
+            
+            // Check if current time is within the window
+            return currentTotalMinutes >= effectiveStart && currentTotalMinutes <= endTotalMinutes;
+        });
+
+        res.json(availableNow);
+        
+    } catch (error) {
+        console.error('[getDoctorsAvailableNow] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
 };

@@ -5,6 +5,8 @@ const { fromZonedTime: zonedTimeToUtc, toZonedTime: utcToZonedTime, format } = r
 
 
 
+
+
 exports.getAvailableSlotsForAdmin = async (req, res) => {
   const { clinic_id, clinic_doctor_id, date } = req.query;
   
@@ -442,7 +444,7 @@ exports.getAppointments = async (req, res) => {
   model: ClinicPatient, 
   as: 'patient',
   attributes: [
-    'id', 'first_name', 'last_name', 'dob',
+    'id', 'first_name', 'last_name', 'dob','gender',
     // Calculate age on the fly in Postgres
     [sequelize.literal("EXTRACT(YEAR FROM AGE(CURRENT_DATE, dob))"), 'age']
   ]
@@ -517,3 +519,4 @@ exports.checkInPatient = async (req, res) => {
     return res.status(500).json({ error: 'Failed to check in patient' });
   }
 };
+

@@ -9,6 +9,10 @@ router.use(authenticate);
 
 // Staff Management (Admins only)
 router.post('/clinic-doctor', checkPermission('manage_staff'), clinicUserController.addClinicDoctor);
+router.get('/clinic-doctor/available-now', 
+    checkPermission('manage_appointments'), 
+    clinicUserController.getDoctorsAvailableNow
+);
 router.put('/clinic-doctor/:id', checkPermission('manage_staff'), clinicUserController.updateClinicDoctor);
 router.delete('/clinic-doctor/:id', checkPermission('manage_staff'), clinicUserController.deleteClinicDoctor);
 router.get('/clinic-doctor', checkPermission('view_all_schedule'), clinicUserController.getClinicDoctors); // Reception needs to see doctors to book them
