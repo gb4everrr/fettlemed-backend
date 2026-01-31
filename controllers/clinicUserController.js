@@ -1,4 +1,4 @@
-const { User, ClinicDoctor, ClinicPatient, ClinicAdmin } = require('../models');
+const { User, ClinicDoctor, ClinicPatient, ClinicAdmin, DoctorAvailability, AvailabilityException, Clinic } = require('../models');
 const bcrypt = require('bcrypt');
 const { sequelize } = require('../models'); 
 const { Op } = require('sequelize');
@@ -185,44 +185,71 @@ exports.addClinicDoctor = async (req, res) => {
 };
 
 exports.getClinicDoctors = async (req, res) => {
-  const clinic_id = parseInt(req.query.clinic_id);
+  const { clinic_id } = req.query;
+
   try {
-    // 1. Get all clinical profiles
-    const doctors = await ClinicDoctor.findAll({ where: { clinic_id } });
+    // 1. Fetch Clinic Settings to get Timezone
+    const clinic = await Clinic.findByPk(clinic_id);
+    const timeZone = clinic?.timezone || 'Asia/Kolkata'; // Fallback to IST if missing
+
+    // 2. Calculate "Today" in the CLINIC'S Timezone
+    // We use Intl.DateTimeFormat to reliably convert UTC server time to Clinic Local Time
+    const now = new Date();
     
-    // 2. Extract User IDs to fetch roles in bulk
-    const userIds = doctors
-      .map(d => d.global_doctor_id)
-      .filter(id => id !== null);
+    // Get Weekday (e.g., 'Saturday')
+    const currentWeekday = new Intl.DateTimeFormat('en-US', { 
+      timeZone, 
+      weekday: 'long' 
+    }).format(now);
 
-    // 3. Fetch Roles from ClinicAdmin
-    const adminRecords = await ClinicAdmin.findAll({
-      where: { 
-        clinic_id, 
-        user_id: { [Op.in]: userIds } 
-      },
-      attributes: ['user_id', 'role']
+    // Get Date (e.g., '2026-01-31')
+    // en-CA format gives YYYY-MM-DD which matches SQL DATEONLY
+    const currentDateStr = new Intl.DateTimeFormat('en-CA', { 
+      timeZone 
+    }).format(now);
+
+    console.log(`[getClinicDoctors] Clinic: ${clinic_id} | Timezone: ${timeZone}`);
+    console.log(`[getClinicDoctors] System thinks it is: ${currentWeekday}, ${currentDateStr}`);
+
+    // 3. Fetch Active Doctors
+    const doctors = await ClinicDoctor.findAll({
+      where: { clinic_id, active: true },
+      attributes: ['id', 'first_name', 'last_name', 'specialization', 'active']
     });
 
-    // 4. Create a Map for O(1) lookup
-    const roleMap = {};
-    adminRecords.forEach(r => { roleMap[r.user_id] = r.role; });
-
-    // 5. Merge Role into response
-    const doctorsWithRoles = doctors.map(d => {
-      const doc = d.toJSON();
-      const isRegistered = !!d.global_doctor_id;
-      // If no user ID, they are "Pending"
-      doc.role = isRegistered 
-        ? (roleMap[d.global_doctor_id] || d.assigned_role || 'DOCTOR') 
-        : (d.assigned_role || 'DOCTOR');
-
-      doc.registration_status = isRegistered ? 'REGISTERED' : 'PENDING';
-      return doc;
+    // 4. Fetch Schedule & Exceptions
+    const scheduledToday = await DoctorAvailability.findAll({
+      where: { clinic_id, weekday: currentWeekday, active: true }
     });
 
-    res.json(doctorsWithRoles);
+    const exceptionsToday = await AvailabilityException.findAll({
+      where: { clinic_id, date: currentDateStr }
+    });
+
+    // 5. Merge Logic
+    const doctorsWithStatus = doctors.map(doc => {
+      const docJson = doc.toJSON();
+      
+      const exception = exceptionsToday.find(e => e.clinic_doctor_id === doc.id);
+      
+      if (exception) {
+         // Exception rules (True = Extra Shift, False = Time Off)
+         docJson.is_available_today = exception.is_available;
+         docJson.debug_reason = "Exception Found";
+      } else {
+         // Standard Schedule
+         const hasShift = scheduledToday.some(s => s.clinic_doctor_id === doc.id);
+         docJson.is_available_today = hasShift;
+         docJson.debug_reason = hasShift ? "Standard Shift" : "No Shift";
+      }
+      
+      return docJson;
+    });
+
+    res.json(doctorsWithStatus);
+
   } catch (err) {
+    console.error('Error fetching clinic doctors:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -270,44 +297,65 @@ exports.deleteClinicDoctor = async (req, res) => {
 };
 
 exports.addClinicPatient = async (req, res) => {
-  const { clinic_id, phone_number, first_name, last_name, email, address, emergency_contact, patient_code, clinic_notes } = req.body;
+  const { 
+    clinic_id, first_name, last_name, email, 
+    phone_number, address, 
+    gender, // <--- Now backed by DB
+    dob     // <--- Now backed by DB
+  } = req.body;
 
   try {
-    
+    if (!first_name || !last_name || !phone_number) {
+      return res.status(400).json({ error: 'First name, last name, and phone are required.' });
+    }
 
-    const user = await User.findOne({ where: { phone_number } });
-
-    const patient = await ClinicPatient.create({
+    const newPatient = await ClinicPatient.create({
       clinic_id,
-      global_patient_id: user ? user.id : null,
-      phone_number,
       first_name,
       last_name,
-      email,
-      address,
-      emergency_contact,
-      patient_code,
-      clinic_notes
+      email: email || null,
+      phone_number,
+      address: address || null,
+      gender: gender || 'Male',
+      dob: dob || null,
+      registered_at: new Date()
     });
 
-    res.status(201).json(patient);
+    res.status(201).json(newPatient);
   } catch (err) {
+    console.error('Error adding clinic patient:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
+
 exports.getClinicPatients = async (req, res) => {
-  const clinic_id = parseInt(req.query.clinic_id);
   try {
-   
-    const patients = await ClinicPatient.findAll({ where: { clinic_id } });
+    // 1. robustly get clinic_id (from query OR user session)
+    const clinic_id = req.query.clinic_id || req.user.clinic_id; 
+    const { query } = req.query;
+
+    const whereClause = { clinic_id };
+
+    // 2. ONLY apply search filter if 'query' is provided
+    if (query && query.trim() !== '') {
+      whereClause[Op.or] = [
+        { first_name: { [Op.iLike]: `%${query}%` } },
+        { last_name: { [Op.iLike]: `%${query}%` } },
+        { phone_number: { [Op.iLike]: `%${query}%` } },
+        { email: { [Op.iLike]: `%${query}%` } } 
+      ];
+    }
+
+    const patients = await ClinicPatient.findAll({
+      where: whereClause,
+      order: [['first_name', 'ASC']],
+      limit: 50 // Safety limit to prevent crashing UI if list is huge
+    });
+
     res.json(patients);
   } catch (err) {
-    console.error('Error in getClinicPatients:', err);
-    // Explicitly check for TypeError related to req.user
-    if (err instanceof TypeError && err.message.includes("Cannot read properties of undefined")) {
-        return res.status(403).json({ error: 'Authentication failed or token is invalid.' });
-    }
+    console.error('Error fetching clinic patients:', err);
     res.status(500).json({ error: err.message });
   }
 };

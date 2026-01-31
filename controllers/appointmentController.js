@@ -1,4 +1,4 @@
-const { Appointment, AppointmentSlot, ClinicAdmin, ClinicDoctor, DoctorAvailability, AvailabilityException, ClinicPatient, Clinic,InvoiceService } = require('../models');
+const { Appointment, AppointmentSlot, ClinicAdmin, ClinicDoctor, DoctorAvailability, AvailabilityException, ClinicPatient, Clinic,InvoiceService,sequelize, } = require('../models');
 const { Op } = require('sequelize');
 const { parse } = require('date-fns');
 const { fromZonedTime: zonedTimeToUtc, toZonedTime: utcToZonedTime, format } = require('date-fns-tz');
@@ -167,11 +167,19 @@ exports.getAvailableSlotsForAdmin = async (req, res) => {
 
 // UPDATED: Create appointment with proper timezone handling
 exports.createAppointment = async (req, res) => {
-  // Accept both datetime formats: either clinic timezone or UTC
-  const { clinic_doctor_id, clinic_id, clinic_patient_id, datetime_start, datetime_end, notes, timezone } = req.body;
+  const { 
+    clinic_doctor_id, 
+    clinic_id, 
+    clinic_patient_id, 
+    datetime_start, 
+    datetime_end, 
+    notes, 
+    timezone,
+    appointment_type // 0=Booked, 1=Walk-in, 3=Emergency
+  } = req.body;
   
   try {
-
+    // 1. Validate Doctor
     const doctor = await ClinicDoctor.findOne({
       where: { id: clinic_doctor_id, clinic_id: clinic_id, active: true }
     });
@@ -179,7 +187,7 @@ exports.createAppointment = async (req, res) => {
       return res.status(400).json({ error: 'Doctor not found in this clinic' });
     }
 
-    // Verify the clinic_patient exists
+    // 2. Validate Patient
     const clinicPatient = await ClinicPatient.findOne({
       where: { 
         id: clinic_patient_id,
@@ -191,94 +199,93 @@ exports.createAppointment = async (req, res) => {
       return res.status(400).json({ error: 'Patient not found in this clinic' });
     }
 
-    // Get clinic timezone for conversion if needed
+    // 3. Timezone Handling
     const clinic = await Clinic.findByPk(clinic_id);
     const clinicTimeZone = clinic?.timezone || 'Asia/Kolkata';
 
-    // Convert datetime to UTC if it's in clinic timezone
     let startUtc, endUtc;
     
     try {
       if (timezone && timezone !== 'UTC') {
-        // Frontend sent timezone-aware datetime, convert to UTC
         startUtc = zonedTimeToUtc(datetime_start, timezone);
         endUtc = zonedTimeToUtc(datetime_end, timezone);
       } else if (datetime_start.includes('Z') || datetime_start.includes('+')) {
-        // Already in UTC or has timezone info
         startUtc = new Date(datetime_start);
         endUtc = new Date(datetime_end);
       } else {
-        // Assume it's in clinic timezone and convert to UTC
         startUtc = zonedTimeToUtc(datetime_start, clinicTimeZone);
         endUtc = zonedTimeToUtc(datetime_end, clinicTimeZone);
       }
     } catch (timezoneError) {
       console.error('Timezone conversion error in createAppointment:', timezoneError);
-      // Fallback to direct parsing
       startUtc = new Date(datetime_start);
       endUtc = new Date(datetime_end);
     }
 
-    console.log('Datetime conversion:', {
-      original_start: datetime_start,
-      original_end: datetime_end,
-      converted_start_utc: startUtc.toISOString(),
-      converted_end_utc: endUtc.toISOString(),
-      clinic_timezone: clinicTimeZone
-    });
+    // 4. Slot Logic (Bypass for Walk-ins/Emergencies)
+    let slotId = null;
+    const isStandardBooking = !appointment_type || appointment_type === 0;
 
-    // Check for conflicting appointments
-    const conflictingAppointment = await Appointment.findOne({
-      where: {
-        clinic_doctor_id,
-        clinic_id,
-        [Op.or]: [
-          {
-            datetime_start: {
-              [Op.between]: [startUtc, endUtc]
+    if (isStandardBooking) {
+      // --- STANDARD BOOKING FLOW ---
+      
+      // Check for conflicts
+      const conflictingAppointment = await Appointment.findOne({
+        where: {
+          clinic_doctor_id,
+          clinic_id,
+          [Op.or]: [
+            { datetime_start: { [Op.between]: [startUtc, endUtc] } },
+            { datetime_end: { [Op.between]: [startUtc, endUtc] } },
+            {
+              [Op.and]: [
+                { datetime_start: { [Op.lte]: startUtc } },
+                { datetime_end: { [Op.gte]: endUtc } }
+              ]
             }
-          },
-          {
-            datetime_end: {
-              [Op.between]: [startUtc, endUtc]
-            }
-          },
-          {
-            [Op.and]: [
-              { datetime_start: { [Op.lte]: startUtc } },
-              { datetime_end: { [Op.gte]: endUtc } }
-            ]
-          }
-        ],
-        status: { [Op.ne]: 2 } // Not cancelled
+          ],
+          status: { [Op.ne]: 2 } 
+        }
+      });
+
+      if (conflictingAppointment) {
+        return res.status(400).json({ error: 'Time slot is already booked' });
       }
-    });
 
-    if (conflictingAppointment) {
-      return res.status(400).json({ error: 'Time slot is already booked' });
-    }
-
-    // Create the slot with UTC times
-    const slot = await AppointmentSlot.create({
-      clinic_id,
-      clinic_doctor_id,
-      start_time: startUtc,
-      end_time: endUtc,
-      booked: true
-    });
-    
-    // Create the appointment with UTC times
+      // Create the slot
+      const slot = await AppointmentSlot.create({
+        clinic_id,
+        clinic_doctor_id,
+        start_time: startUtc,
+        end_time: endUtc,
+        booked: true
+      });
+      slotId = slot.id;
+    } 
+    // ELSE: Walk-ins skip conflict checks and slot creation (slotId remains null)
+    const isLiveArrival = appointment_type == 1 || appointment_type == 3;
+    // 5. Create Appointment
     const appointment = await Appointment.create({ 
       clinic_doctor_id, 
       clinic_id, 
-      clinic_patient_id: clinic_patient_id,
-      slot_id: slot.id,
+      clinic_patient_id,
+      slot_id: slotId, // Null for Walk-ins
       datetime_start: startUtc,
       datetime_end: endUtc,
-      notes: notes || null
+      notes: notes || null,
+      
+      // Status Logic: 
+      status: isLiveArrival ? 1 : 0, 
+      
+      appointment_type: appointment_type || 0,
+      
+      // Arrival Logic:
+      // Walk-ins have arrived NOW. Standard bookings have not arrived yet.
+      arrival_time: isLiveArrival ? new Date() : null
     });
     
     res.status(201).json(appointment);
+
   } catch (err) {
     console.error('Error creating appointment:', err);
     res.status(500).json({ error: err.message });
@@ -432,10 +439,14 @@ exports.getAppointments = async (req, res) => {
           attributes: ['id', 'first_name', 'last_name']
         },
         { 
-          model: ClinicPatient, 
-          as: 'patient',
-          attributes: ['id', 'first_name', 'last_name']
-        }
+  model: ClinicPatient, 
+  as: 'patient',
+  attributes: [
+    'id', 'first_name', 'last_name', 'dob',
+    // Calculate age on the fly in Postgres
+    [sequelize.literal("EXTRACT(YEAR FROM AGE(CURRENT_DATE, dob))"), 'age']
+  ]
+}
       ],
       order: [['datetime_start', 'ASC']]
     });
@@ -472,5 +483,37 @@ exports.getAppointments = async (req, res) => {
   } catch (err) {
     console.error('Error in getAppointments:', err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.checkInPatient = async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const appointment = await Appointment.findByPk(id);
+    if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
+
+    // MD Rule #17: Arrival time is immutable (don't overwrite if already set)
+    if (appointment.arrival_time) {
+      return res.status(400).json({ error: 'Patient already checked in.' });
+    }
+
+    // MD Rule #18: Server time only
+    const serverTime = new Date();
+
+    await appointment.update({
+      arrival_time: serverTime,
+      status: 1, // Updating status to "Confirmed/Waiting"
+      // If it's an emergency check-in, you might pass body.type = 3 here
+    });
+
+    return res.json({ 
+      success: true, 
+      arrival_time: serverTime,
+      status: 1 
+    });
+  } catch (error) {
+    console.error('Check-in error:', error);
+    return res.status(500).json({ error: 'Failed to check in patient' });
   }
 };

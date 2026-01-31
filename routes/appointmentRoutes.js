@@ -16,4 +16,6 @@ router.get('/', checkPermission('view_all_schedule'), appointmentController.getA
 router.get('/slots', checkPermission('manage_appointments'), appointmentController.getAvailableSlotsForAdmin);
 router.get('/my', checkPermission('view_own_schedule'), appointmentController.getAppointments);
 
+router.put('/:id/check-in', checkPermission('manage_appointments'), appointmentController.checkInPatient);
+
 module.exports = router;

@@ -40,6 +40,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    dob: {
+  type: DataTypes.DATEONLY, // DATEONLY 
+},
+gender: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: 'Male'
+    },
     registered_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW

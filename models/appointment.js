@@ -4,12 +4,16 @@ module.exports = (sequelize, DataTypes) => {
     // This refers to clinic_patient.id, not users.id
     clinic_patient_id: { type: DataTypes.INTEGER, allowNull: false }, // Renamed for clarity
     clinic_doctor_id: { type: DataTypes.INTEGER, allowNull: false },
-    slot_id: { type: DataTypes.INTEGER, allowNull: false },
+    slot_id: { type: DataTypes.INTEGER, allowNull: true },
     datetime_start: { type: DataTypes.DATE, allowNull: false },
     datetime_end: { type: DataTypes.DATE, allowNull: false },
     invoice_no: { type: DataTypes.INTEGER },
     status: { type: DataTypes.INTEGER, defaultValue: 0 },
-    notes: { type: DataTypes.TEXT, allowNull: true }
+    notes: { type: DataTypes.TEXT, allowNull: true },
+    arrival_time: { type: DataTypes.DATE, allowNull: true },
+appointment_type: { type: DataTypes.INTEGER, defaultValue: 0 },
+priority_score: { type: DataTypes.INTEGER, defaultValue: 0 },
+is_priority: { type: DataTypes.BOOLEAN, defaultValue: false }
   }, {
     tableName: 'appointment',
     timestamps: false
