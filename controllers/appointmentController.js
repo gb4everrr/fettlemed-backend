@@ -233,22 +233,18 @@ exports.createAppointment = async (req, res) => {
       
       // Check for conflicts
       const conflictingAppointment = await Appointment.findOne({
-        where: {
-          clinic_doctor_id,
-          clinic_id,
-          [Op.or]: [
-            { datetime_start: { [Op.between]: [startUtc, endUtc] } },
-            { datetime_end: { [Op.between]: [startUtc, endUtc] } },
-            {
-              [Op.and]: [
-                { datetime_start: { [Op.lte]: startUtc } },
-                { datetime_end: { [Op.gte]: endUtc } }
-              ]
-            }
-          ],
-          status: { [Op.ne]: 2 } 
-        }
-      });
+  where: {
+    clinic_doctor_id,
+    clinic_id,
+    status: { [Op.ne]: 2 }, // Ignore cancelled appointments
+    [Op.and]: [
+      {
+        datetime_start: { [Op.lt]: endUtc }, // Existing start must be before new end
+        datetime_end: { [Op.gt]: startUtc }  // Existing end must be after new start
+      }
+    ]
+  }
+});
 
       if (conflictingAppointment) {
         return res.status(400).json({ error: 'Time slot is already booked' });
