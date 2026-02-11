@@ -11,6 +11,17 @@ module.exports = (sequelize, DataTypes) => {
     emergency_contact: {
       type: DataTypes.STRING,
       allowNull: true
+    },
+    // ABDM Fields
+    abha_number: {
+      type: DataTypes.STRING(14),
+      allowNull: true,
+      unique: true
+    },
+    abha_address: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true
     }
   }, {
     tableName: 'patient_profile',

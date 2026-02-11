@@ -11,6 +11,12 @@ module.exports = (sequelize, DataTypes) => {
     specialization: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    // ABDM Field: Healthcare Professional Registry ID
+    hpr_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true
     }
   }, {
     tableName: 'doctor_profile',

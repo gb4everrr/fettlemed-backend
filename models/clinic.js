@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true // Added unique constraint for email if not already in migration
+      unique: true
     },
     phone: {
       type: DataTypes.STRING,
@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
       defaultValue: 'UTC', 
-      comment: 'IANA timezone name, e.g., "Asia/Kolkata" or "America/New_York"'
+      comment: 'IANA timezone name, e.g., "Asia/Kolkata"'
     },
     brandColor: {
       type: DataTypes.STRING,
@@ -37,6 +37,12 @@ module.exports = (sequelize, DataTypes) => {
         model: 'clinic',
         key: 'id'
       }
+    },
+    // ABDM Field: Health Facility Registry ID
+    hfr_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true
     }
   }, {
     tableName: 'clinic',
@@ -44,12 +50,11 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true
   });
 
-  // ADDED: Association definition
   Clinic.associate = (models) => {
     Clinic.hasMany(models.ClinicAdmin, {
-      foreignKey: 'clinic_id', // foreign key in ClinicAdmin model
-      as: 'clinicAdmins',     // alias for eager loading
-      onDelete: 'CASCADE',    // if clinic is deleted, delete associated clinic_admin entries
+      foreignKey: 'clinic_id',
+      as: 'clinicAdmins',
+      onDelete: 'CASCADE',
     });
     Clinic.hasMany(models.Appointment, {
       foreignKey: 'clinic_id',
@@ -67,7 +72,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'parent_clinic_id',
       as: 'parentClinic'
     });
-    
   };
 
   return Clinic;

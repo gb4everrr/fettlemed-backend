@@ -27,6 +27,12 @@ module.exports = (sequelize, DataTypes) => {
     phone_number: {
       type: DataTypes.STRING,
       allowNull: true
+    },
+    // ABDM Field: 0=Unverified, 1=Mobile, 2=ABHA/Aadhaar
+    kyc_level: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
     }
   }, {
     tableName: 'users',        
