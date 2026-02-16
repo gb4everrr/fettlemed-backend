@@ -2,18 +2,16 @@ module.exports = (sequelize, DataTypes) => {
   const PatientAllergy = sequelize.define('PatientAllergy', {
     clinic_patient_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'clinic_patient', // Matches your existing table name
-        key: 'id'
-      }
+      allowNull: false
+      // references belong in the association definition, not here
     },
     allergy_name: {
       type: DataTypes.STRING,
       allowNull: false
     },
+    // DB stores as character varying — ENUM would cause CREATE TYPE failure
     severity: {
-      type: DataTypes.ENUM('mild', 'moderate', 'severe', 'unknown'),
+      type: DataTypes.STRING,
       defaultValue: 'unknown'
     },
     reaction: {
@@ -21,21 +19,24 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     recorded_by: {
-      type: DataTypes.INTEGER, 
+      type: DataTypes.INTEGER,
       allowNull: false
     }
   }, {
     tableName: 'patient_allergies',
     timestamps: true,
-    createdAt: 'created_at', // <--- FIX: Maps Sequelize's createdAt to DB's created_at
-    updatedAt: 'updated_at', // <--- FIX: Maps Sequelize's updatedAt to DB's updated_at
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
     indexes: [
-      { fields: ['clinic_patient_id'] } 
+      { fields: ['clinic_patient_id'] }
     ]
   });
 
   PatientAllergy.associate = (models) => {
-    PatientAllergy.belongsTo(models.ClinicPatient, { foreignKey: 'clinic_patient_id', as: 'patient' });
+    PatientAllergy.belongsTo(models.ClinicPatient, {
+      foreignKey: 'clinic_patient_id',
+      as: 'patient'
+    });
   };
 
   return PatientAllergy;

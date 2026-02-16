@@ -1,12 +1,14 @@
 module.exports = (sequelize, DataTypes) => {
   const PatientProfile = sequelize.define('PatientProfile', {
+    // DB is_nullable: YES — was incorrectly allowNull: false
     user_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
+    // DB is_nullable: YES — was incorrectly allowNull: false
     address: {
       type: DataTypes.TEXT,
-      allowNull: false
+      allowNull: true
     },
     emergency_contact: {
       type: DataTypes.STRING,

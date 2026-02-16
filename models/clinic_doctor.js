@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'clinic', 
+        model: 'clinic',
         key: 'id'
       }
     },
@@ -40,8 +40,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    // DB column is `date` (date-only), not timestamptz — was incorrectly DATE
     started_date: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATEONLY,
       allowNull: true
     },
     active: {
@@ -51,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
     assigned_role: {
       type: DataTypes.STRING,
       allowNull: true,
-      defaultValue: 'DOCTOR' 
+      defaultValue: 'DOCTOR'
     }
   }, {
     tableName: 'clinic_doctor',
@@ -59,12 +60,9 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false
   });
 
-  // ADD THIS ASSOCIATE FUNCTION
   ClinicDoctor.associate = (models) => {
-    ClinicDoctor.hasMany(models.ClinicVitalConfig, {
-      foreignKey: 'clinic_doctor_id',
-      as: 'vitalConfigs'
-    });
+    // Removed: hasMany(ClinicVitalConfig) — clinic_vital_config has no
+    // clinic_doctor_id column in the DB; that association was invalid.
     ClinicDoctor.hasMany(models.Appointment, {
       foreignKey: 'clinic_doctor_id',
       as: 'appointments'
@@ -74,8 +72,6 @@ module.exports = (sequelize, DataTypes) => {
       as: 'Clinic'
     });
   };
-
-  
 
   return ClinicDoctor;
 };

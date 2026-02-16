@@ -1,15 +1,14 @@
 module.exports = (sequelize, DataTypes) => {
-  // 1. Define the model
   const Service = sequelize.define('Service', {
-    name: { type: DataTypes.STRING, allowNull: false },
-    price: { type: DataTypes.FLOAT, allowNull: false },
+    // DB is_nullable: YES for both — were incorrectly allowNull: false
+    name: { type: DataTypes.STRING, allowNull: true },
+    price: { type: DataTypes.FLOAT, allowNull: true },
     clinic_id: { type: DataTypes.INTEGER, allowNull: false }
   }, {
     tableName: 'service',
     timestamps: false
   });
 
-  // 2. Add the associate method
   Service.associate = (models) => {
     Service.belongsTo(models.Clinic, {
       foreignKey: 'clinic_id',
@@ -17,6 +16,5 @@ module.exports = (sequelize, DataTypes) => {
     });
   };
 
-  // 3. Return the model
   return Service;
 };

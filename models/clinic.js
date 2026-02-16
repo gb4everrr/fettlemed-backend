@@ -1,27 +1,29 @@
-// gb4everrr/fettlemed-backend/models/clinic.js
 module.exports = (sequelize, DataTypes) => {
   const Clinic = sequelize.define('Clinic', {
     name: {
       type: DataTypes.STRING,
       allowNull: false
     },
+    // DB column is text (not varchar) and is nullable in DB
     address: {
-      type: DataTypes.STRING,
-      allowNull: false
+      type: DataTypes.TEXT,
+      allowNull: true
     },
+    // Nullable in DB (is_nullable: YES) — relaxed from old model's allowNull: false
     email: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       unique: true
     },
+    // Nullable in DB (is_nullable: YES) — relaxed from old model's allowNull: false
     phone: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     timezone: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: 'UTC', 
+      defaultValue: 'UTC',
       comment: 'IANA timezone name, e.g., "Asia/Kolkata"'
     },
     brandColor: {
@@ -47,7 +49,10 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     tableName: 'clinic',
     freezeTableName: true,
-    timestamps: true
+    // DB has createdAt / updatedAt (camelCase) — Sequelize default matches
+    timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
   });
 
   Clinic.associate = (models) => {

@@ -8,8 +8,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(150),
       allowNull: false
     },
+    // DB stores as character varying — ENUM would cause CREATE TYPE failure
     priority: {
-      type: DataTypes.ENUM('high', 'normal', 'low'),
+      type: DataTypes.STRING,
       defaultValue: 'normal'
     },
     is_completed: {
@@ -22,13 +23,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'tasks',
-    timestamps: true, // Automatically manages created_at / updated_at
-    createdAt: 'created_at', // <--- FIX: Maps Sequelize's createdAt to DB's created_at
-    updatedAt: 'updated_at', // <--- FIX: Maps Sequelize's updatedAt to DB's updated_at
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
     indexes: [
-      {
-        fields: ['user_id', 'is_completed']
-      }
+      { fields: ['user_id', 'is_completed'] }
     ]
   });
 

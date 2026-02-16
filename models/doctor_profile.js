@@ -4,13 +4,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    // DB is_nullable: YES for both — was incorrectly allowNull: false
     medical_reg_no: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     specialization: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     // ABDM Field: Healthcare Professional Registry ID
     hpr_id: {

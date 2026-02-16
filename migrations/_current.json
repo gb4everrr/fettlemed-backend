@@ -1,0 +1,1906 @@
+{
+    "tables": {
+        "appointment": {
+            "tableName": "appointment",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "references": {
+                        "model": "clinic",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_patient_id": {
+                    "allowNull": false,
+                    "field": "clinic_patient_id",
+                    "references": {
+                        "model": "clinic_patient",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_doctor_id": {
+                    "allowNull": false,
+                    "field": "clinic_doctor_id",
+                    "references": {
+                        "model": "clinic_doctor",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "slot_id": {
+                    "allowNull": true,
+                    "field": "slot_id",
+                    "references": {
+                        "model": "appointment_slot",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "datetime_start": {
+                    "allowNull": false,
+                    "field": "datetime_start",
+                    "seqType": "Sequelize.DATE"
+                },
+                "datetime_end": {
+                    "allowNull": false,
+                    "field": "datetime_end",
+                    "seqType": "Sequelize.DATE"
+                },
+                "invoice_no": {
+                    "allowNull": true,
+                    "field": "invoice_no",
+                    "seqType": "Sequelize.STRING"
+                },
+                "status": {
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "notes": {
+                    "allowNull": true,
+                    "field": "notes",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "arrival_time": {
+                    "allowNull": true,
+                    "field": "arrival_time",
+                    "seqType": "Sequelize.DATE"
+                },
+                "appointment_type": {
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "appointment_type",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "priority_score": {
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "priority_score",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "is_priority": {
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_priority",
+                    "seqType": "Sequelize.BOOLEAN"
+                }
+            },
+            "indexes": []
+        },
+        "appointment_diagnosis": {
+            "tableName": "appointment_diagnosis",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "appointment_id": {
+                    "allowNull": false,
+                    "field": "appointment_id",
+                    "references": {
+                        "model": "appointment",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_patient_id": {
+                    "field": "clinic_patient_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_doctor_id": {
+                    "field": "clinic_doctor_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "diagnosis_catalog_id": {
+                    "field": "diagnosis_catalog_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "description": {
+                    "allowNull": false,
+                    "field": "description",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "code": {
+                    "field": "code",
+                    "seqType": "Sequelize.STRING"
+                },
+                "type": {
+                    "defaultValue": {
+                        "value": "Provisional"
+                    },
+                    "field": "type",
+                    "seqType": "Sequelize.STRING"
+                },
+                "added_by_user_id": {
+                    "field": "added_by_user_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "added_by_name": {
+                    "field": "added_by_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "is_active": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "is_active",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "created_at": {
+                    "allowNull": false,
+                    "field": "created_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updated_at": {
+                    "allowNull": false,
+                    "field": "updated_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "appointment_slot": {
+            "tableName": "appointment_slot",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_doctor_id": {
+                    "allowNull": false,
+                    "field": "clinic_doctor_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "start_time": {
+                    "allowNull": false,
+                    "field": "start_time",
+                    "seqType": "Sequelize.DATE"
+                },
+                "end_time": {
+                    "allowNull": false,
+                    "field": "end_time",
+                    "seqType": "Sequelize.DATE"
+                },
+                "booked": {
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "booked",
+                    "seqType": "Sequelize.BOOLEAN"
+                }
+            },
+            "indexes": []
+        },
+        "availability_exception": {
+            "tableName": "availability_exception",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_doctor_id": {
+                    "allowNull": false,
+                    "field": "clinic_doctor_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "date": {
+                    "allowNull": false,
+                    "field": "date",
+                    "seqType": "Sequelize.DATEONLY"
+                },
+                "start_time": {
+                    "allowNull": false,
+                    "field": "start_time",
+                    "seqType": "Sequelize.TIME"
+                },
+                "end_time": {
+                    "allowNull": false,
+                    "field": "end_time",
+                    "seqType": "Sequelize.TIME"
+                },
+                "is_available": {
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_available",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "note": {
+                    "allowNull": true,
+                    "field": "note",
+                    "seqType": "Sequelize.TEXT"
+                }
+            },
+            "indexes": []
+        },
+        "clinic": {
+            "tableName": "clinic",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "name": {
+                    "allowNull": false,
+                    "field": "name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "address": {
+                    "allowNull": true,
+                    "field": "address",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "email": {
+                    "allowNull": true,
+                    "unique": true,
+                    "field": "email",
+                    "seqType": "Sequelize.STRING"
+                },
+                "phone": {
+                    "allowNull": true,
+                    "field": "phone",
+                    "seqType": "Sequelize.STRING"
+                },
+                "timezone": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "UTC"
+                    },
+                    "comment": "IANA timezone name, e.g., \"Asia/Kolkata\"",
+                    "field": "timezone",
+                    "seqType": "Sequelize.STRING"
+                },
+                "brandColor": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "#2D5367"
+                    },
+                    "field": "brand_color",
+                    "seqType": "Sequelize.STRING"
+                },
+                "parent_clinic_id": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "clinic",
+                        "key": "id"
+                    },
+                    "field": "parent_clinic_id",
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "hfr_id": {
+                    "allowNull": true,
+                    "unique": true,
+                    "field": "hfr_id",
+                    "seqType": "Sequelize.STRING"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "clinic_admin": {
+            "tableName": "clinic_admin",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "user_id": {
+                    "allowNull": false,
+                    "field": "user_id",
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "references": {
+                        "model": "clinic",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "role": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": "CLINIC_ADMIN"
+                    },
+                    "field": "role",
+                    "seqType": "Sequelize.STRING"
+                },
+                "custom_permissions": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.Array"
+                    },
+                    "field": "custom_permissions",
+                    "seqType": "Sequelize.JSON"
+                },
+                "active": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "active",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "clinic_doctor": {
+            "tableName": "clinic_doctor",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "references": {
+                        "model": "clinic",
+                        "key": "id"
+                    },
+                    "field": "clinic_id",
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "global_doctor_id": {
+                    "allowNull": true,
+                    "field": "global_doctor_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "first_name": {
+                    "allowNull": true,
+                    "field": "first_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "last_name": {
+                    "allowNull": true,
+                    "field": "last_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "email": {
+                    "allowNull": true,
+                    "field": "email",
+                    "seqType": "Sequelize.STRING"
+                },
+                "phone_number": {
+                    "allowNull": true,
+                    "field": "phone_number",
+                    "seqType": "Sequelize.STRING"
+                },
+                "address": {
+                    "allowNull": true,
+                    "field": "address",
+                    "seqType": "Sequelize.STRING"
+                },
+                "medical_reg_no": {
+                    "allowNull": true,
+                    "field": "medical_reg_no",
+                    "seqType": "Sequelize.STRING"
+                },
+                "specialization": {
+                    "allowNull": true,
+                    "field": "specialization",
+                    "seqType": "Sequelize.STRING"
+                },
+                "started_date": {
+                    "allowNull": true,
+                    "field": "started_date",
+                    "seqType": "Sequelize.DATEONLY"
+                },
+                "active": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "active",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "assigned_role": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "DOCTOR"
+                    },
+                    "field": "assigned_role",
+                    "seqType": "Sequelize.STRING"
+                }
+            },
+            "indexes": []
+        },
+        "clinic_patient": {
+            "tableName": "clinic_patient",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "global_patient_id": {
+                    "allowNull": true,
+                    "field": "global_patient_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "first_name": {
+                    "allowNull": true,
+                    "field": "first_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "last_name": {
+                    "allowNull": true,
+                    "field": "last_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "email": {
+                    "allowNull": true,
+                    "field": "email",
+                    "seqType": "Sequelize.STRING"
+                },
+                "phone_number": {
+                    "allowNull": true,
+                    "field": "phone_number",
+                    "seqType": "Sequelize.STRING"
+                },
+                "address": {
+                    "allowNull": true,
+                    "field": "address",
+                    "seqType": "Sequelize.STRING"
+                },
+                "emergency_contact": {
+                    "allowNull": true,
+                    "field": "emergency_contact",
+                    "seqType": "Sequelize.STRING"
+                },
+                "patient_code": {
+                    "allowNull": true,
+                    "field": "patient_code",
+                    "seqType": "Sequelize.STRING"
+                },
+                "clinic_notes": {
+                    "allowNull": true,
+                    "field": "clinic_notes",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "dob": {
+                    "field": "dob",
+                    "seqType": "Sequelize.DATEONLY"
+                },
+                "gender": {
+                    "allowNull": true,
+                    "defaultValue": {
+                        "value": "Male"
+                    },
+                    "field": "gender",
+                    "seqType": "Sequelize.STRING"
+                },
+                "registered_at": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.NOW"
+                    },
+                    "field": "registered_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "clinic_vital_config": {
+            "tableName": "clinic_vital_config",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "vital_name": {
+                    "allowNull": false,
+                    "field": "vital_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "data_type": {
+                    "field": "data_type",
+                    "seqType": "Sequelize.STRING"
+                },
+                "unit": {
+                    "field": "unit",
+                    "seqType": "Sequelize.STRING"
+                },
+                "is_active": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "is_active",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "is_required": {
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_required",
+                    "seqType": "Sequelize.BOOLEAN"
+                }
+            },
+            "indexes": []
+        },
+        "clinic_vital_template": {
+            "tableName": "clinic_vital_template",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "template_name": {
+                    "allowNull": false,
+                    "field": "template_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "description": {
+                    "allowNull": true,
+                    "field": "description",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "clinic_vital_template_member": {
+            "tableName": "clinic_vital_template_member",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "template_id": {
+                    "allowNull": false,
+                    "field": "template_id",
+                    "references": {
+                        "model": "clinic_vital_template",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "vital_config_id": {
+                    "allowNull": false,
+                    "field": "vital_config_id",
+                    "references": {
+                        "model": "clinic_vital_config",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "is_required": {
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_required",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "sort_order": {
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "sort_order",
+                    "seqType": "Sequelize.INTEGER"
+                }
+            },
+            "indexes": []
+        },
+        "consultation_note": {
+            "tableName": "consultation_note",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "appointment_id": {
+                    "allowNull": false,
+                    "field": "appointment_id",
+                    "references": {
+                        "model": "appointment",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_patient_id": {
+                    "field": "clinic_patient_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_doctor_id": {
+                    "field": "clinic_doctor_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "subjective": {
+                    "field": "subjective",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "objective": {
+                    "field": "objective",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "observations_private": {
+                    "field": "observations_private",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "diagnosis_comments": {
+                    "field": "diagnosis_comments",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "created_at": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.NOW"
+                    },
+                    "field": "created_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "consultation_note_history": {
+            "tableName": "consultation_note_history",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "consultation_note_id": {
+                    "allowNull": false,
+                    "field": "consultation_note_id",
+                    "references": {
+                        "model": "consultation_note",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "updated_by_id": {
+                    "field": "updated_by_id",
+                    "allowNull": true,
+                    "references": {
+                        "model": "clinic_doctor",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "subjective": {
+                    "field": "subjective",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "objective": {
+                    "field": "objective",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "observations_private": {
+                    "field": "observations_private",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "change_reason": {
+                    "field": "change_reason",
+                    "seqType": "Sequelize.STRING"
+                },
+                "created_at": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.NOW"
+                    },
+                    "field": "created_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "diagnosis_catalog": {
+            "tableName": "diagnosis_catalog",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "name": {
+                    "allowNull": false,
+                    "field": "name",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "type": {
+                    "field": "type",
+                    "seqType": "Sequelize.STRING"
+                },
+                "snomed_code": {
+                    "field": "snomed_code",
+                    "seqType": "Sequelize.STRING"
+                },
+                "snomed_fsn": {
+                    "field": "snomed_fsn",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "icd_code": {
+                    "field": "icd_code",
+                    "seqType": "Sequelize.STRING"
+                },
+                "icd_description": {
+                    "field": "icd_description",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "body_system": {
+                    "field": "body_system",
+                    "seqType": "Sequelize.STRING"
+                },
+                "clinical_specialty": {
+                    "field": "clinical_specialty",
+                    "seqType": "Sequelize.STRING"
+                },
+                "search_aliases": {
+                    "field": "search_aliases",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "is_active": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "is_active",
+                    "seqType": "Sequelize.BOOLEAN"
+                }
+            },
+            "indexes": []
+        },
+        "doctor_availability": {
+            "tableName": "doctor_availability",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_doctor_id": {
+                    "allowNull": false,
+                    "field": "clinic_doctor_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "weekday": {
+                    "allowNull": false,
+                    "field": "weekday",
+                    "seqType": "Sequelize.STRING"
+                },
+                "start_time": {
+                    "allowNull": false,
+                    "field": "start_time",
+                    "seqType": "Sequelize.TIME"
+                },
+                "end_time": {
+                    "allowNull": false,
+                    "field": "end_time",
+                    "seqType": "Sequelize.TIME"
+                },
+                "active": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "active",
+                    "seqType": "Sequelize.BOOLEAN"
+                }
+            },
+            "indexes": []
+        },
+        "doctor_profile": {
+            "tableName": "doctor_profile",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "user_id": {
+                    "allowNull": false,
+                    "field": "user_id",
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "medical_reg_no": {
+                    "allowNull": true,
+                    "field": "medical_reg_no",
+                    "seqType": "Sequelize.STRING"
+                },
+                "specialization": {
+                    "allowNull": true,
+                    "field": "specialization",
+                    "seqType": "Sequelize.STRING"
+                },
+                "hpr_id": {
+                    "allowNull": true,
+                    "unique": true,
+                    "field": "hpr_id",
+                    "seqType": "Sequelize.STRING"
+                }
+            },
+            "indexes": []
+        },
+        "doctor_vital_assignment": {
+            "tableName": "doctor_vital_assignment",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_doctor_id": {
+                    "allowNull": false,
+                    "field": "clinic_doctor_id",
+                    "references": {
+                        "model": "clinic_doctor",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "vital_config_id": {
+                    "allowNull": false,
+                    "field": "vital_config_id",
+                    "references": {
+                        "model": "clinic_vital_config",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "is_required": {
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_required",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "sort_order": {
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "sort_order",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "assigned_at": {
+                    "allowNull": false,
+                    "field": "assigned_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "document_ocr_data": {
+            "tableName": "document_ocr_data",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "upload_id": {
+                    "allowNull": true,
+                    "field": "upload_id",
+                    "references": {
+                        "model": "report_upload",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "processed_text": {
+                    "allowNull": true,
+                    "field": "processed_text",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "parsed_json": {
+                    "allowNull": true,
+                    "field": "parsed_json",
+                    "seqType": "Sequelize.JSON"
+                }
+            },
+            "indexes": []
+        },
+        "drug_catalog": {
+            "tableName": "drug_catalog",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "name": {
+                    "allowNull": false,
+                    "field": "name",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "generic_name": {
+                    "allowNull": true,
+                    "field": "generic_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "strength": {
+                    "allowNull": true,
+                    "field": "strength",
+                    "seqType": "Sequelize.STRING"
+                },
+                "form": {
+                    "allowNull": true,
+                    "field": "form",
+                    "seqType": "Sequelize.STRING"
+                },
+                "manufacturer": {
+                    "allowNull": true,
+                    "field": "manufacturer",
+                    "seqType": "Sequelize.STRING"
+                },
+                "search_aliases": {
+                    "allowNull": true,
+                    "field": "search_aliases",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "is_active": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "is_active",
+                    "seqType": "Sequelize.BOOLEAN"
+                }
+            },
+            "indexes": []
+        },
+        "invoice": {
+            "tableName": "invoice",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "references": {
+                        "model": "clinic",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_patient_id": {
+                    "allowNull": false,
+                    "references": {
+                        "model": "clinic_patient",
+                        "key": "id"
+                    },
+                    "field": "clinic_patient_id",
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "invoice_date": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.NOW"
+                    },
+                    "field": "invoice_date",
+                    "seqType": "Sequelize.DATE"
+                },
+                "total_amount": {
+                    "allowNull": false,
+                    "field": "total_amount",
+                    "seqType": "Sequelize.FLOAT"
+                }
+            },
+            "indexes": []
+        },
+        "invoice_service": {
+            "tableName": "invoice_service",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "invoice_id": {
+                    "allowNull": false,
+                    "field": "invoice_id",
+                    "references": {
+                        "model": "invoice",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "service_id": {
+                    "allowNull": false,
+                    "field": "service_id",
+                    "references": {
+                        "model": "service",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "price": {
+                    "allowNull": false,
+                    "field": "price",
+                    "seqType": "Sequelize.FLOAT"
+                },
+                "appointment_id": {
+                    "allowNull": true,
+                    "field": "appointment_id",
+                    "references": {
+                        "model": "appointment",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                }
+            },
+            "indexes": []
+        },
+        "lab_catalog": {
+            "tableName": "lab_catalog",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "test_name": {
+                    "allowNull": false,
+                    "field": "test_name",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "test_code": {
+                    "field": "test_code",
+                    "seqType": "Sequelize.STRING"
+                },
+                "search_aliases": {
+                    "field": "search_aliases",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "category": {
+                    "field": "category",
+                    "seqType": "Sequelize.STRING"
+                },
+                "unit": {
+                    "field": "unit",
+                    "seqType": "Sequelize.STRING"
+                },
+                "reference_range": {
+                    "field": "reference_range",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "is_active": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "is_active",
+                    "seqType": "Sequelize.BOOLEAN"
+                }
+            },
+            "indexes": []
+        },
+        "lab_order": {
+            "tableName": "lab_order",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "references": {
+                        "model": "clinic",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_patient_id": {
+                    "allowNull": false,
+                    "field": "clinic_patient_id",
+                    "references": {
+                        "model": "clinic_patient",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "appointment_id": {
+                    "allowNull": true,
+                    "field": "appointment_id",
+                    "references": {
+                        "model": "appointment",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "ordered_by_doctor_id": {
+                    "field": "ordered_by_doctor_id",
+                    "allowNull": true,
+                    "references": {
+                        "model": "clinic_doctor",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "lab_catalog_id": {
+                    "allowNull": true,
+                    "field": "lab_catalog_id",
+                    "references": {
+                        "model": "lab_catalog",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "test_name": {
+                    "allowNull": false,
+                    "field": "test_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "status": {
+                    "defaultValue": {
+                        "value": "Ordered"
+                    },
+                    "field": "status",
+                    "seqType": "Sequelize.STRING"
+                },
+                "priority": {
+                    "defaultValue": {
+                        "value": "routine"
+                    },
+                    "field": "priority",
+                    "seqType": "Sequelize.STRING"
+                },
+                "notes": {
+                    "field": "notes",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "result_value": {
+                    "field": "result_value",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "ordered_at": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.NOW"
+                    },
+                    "field": "ordered_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "created_at": {
+                    "allowNull": false,
+                    "field": "created_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updated_at": {
+                    "allowNull": false,
+                    "field": "updated_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "patient_allergies": {
+            "tableName": "patient_allergies",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_patient_id": {
+                    "allowNull": false,
+                    "field": "clinic_patient_id",
+                    "references": {
+                        "model": "clinic_patient",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "allergy_name": {
+                    "allowNull": false,
+                    "field": "allergy_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "severity": {
+                    "defaultValue": {
+                        "value": "unknown"
+                    },
+                    "field": "severity",
+                    "seqType": "Sequelize.STRING"
+                },
+                "reaction": {
+                    "allowNull": true,
+                    "field": "reaction",
+                    "seqType": "Sequelize.STRING"
+                },
+                "recorded_by": {
+                    "allowNull": false,
+                    "field": "recorded_by",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "created_at": {
+                    "allowNull": false,
+                    "field": "created_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updated_at": {
+                    "allowNull": false,
+                    "field": "updated_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": {
+                "4f247e56deff2b3a498bf2e9432fa654cd4a468b": {
+                    "fields": [
+                        "clinic_patient_id"
+                    ],
+                    "name": "patient_allergies_clinic_patient_id",
+                    "options": {
+                        "indexName": "patient_allergies_clinic_patient_id",
+                        "name": "patient_allergies_clinic_patient_id"
+                    }
+                }
+            }
+        },
+        "patient_profile": {
+            "tableName": "patient_profile",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "user_id": {
+                    "allowNull": true,
+                    "field": "user_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "address": {
+                    "allowNull": true,
+                    "field": "address",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "emergency_contact": {
+                    "allowNull": true,
+                    "field": "emergency_contact",
+                    "seqType": "Sequelize.STRING"
+                },
+                "abha_number": {
+                    "allowNull": true,
+                    "unique": true,
+                    "field": "abha_number",
+                    "seqType": "Sequelize.STRING(14)"
+                },
+                "abha_address": {
+                    "allowNull": true,
+                    "unique": true,
+                    "field": "abha_address",
+                    "seqType": "Sequelize.STRING"
+                }
+            },
+            "indexes": []
+        },
+        "patient_self_data": {
+            "tableName": "patient_self_data",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "patient_profile_id": {
+                    "allowNull": true,
+                    "field": "patient_profile_id",
+                    "references": {
+                        "model": "patient_profile",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "data_type": {
+                    "allowNull": true,
+                    "field": "data_type",
+                    "seqType": "Sequelize.STRING"
+                },
+                "data": {
+                    "allowNull": true,
+                    "field": "data",
+                    "seqType": "Sequelize.JSON"
+                },
+                "entry_time": {
+                    "allowNull": true,
+                    "field": "entry_time",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "prescription": {
+            "tableName": "prescription",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "appointment_id": {
+                    "allowNull": true,
+                    "field": "appointment_id",
+                    "references": {
+                        "model": "appointment",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_patient_id": {
+                    "allowNull": true,
+                    "field": "clinic_patient_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_doctor_id": {
+                    "allowNull": true,
+                    "field": "clinic_doctor_id",
+                    "references": {
+                        "model": "clinic_doctor",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "drug_catalog_id": {
+                    "allowNull": true,
+                    "field": "drug_catalog_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "drug_name": {
+                    "allowNull": false,
+                    "field": "drug_name",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "dose": {
+                    "allowNull": true,
+                    "field": "dose",
+                    "seqType": "Sequelize.STRING"
+                },
+                "frequency": {
+                    "allowNull": true,
+                    "field": "frequency",
+                    "seqType": "Sequelize.STRING"
+                },
+                "duration": {
+                    "allowNull": true,
+                    "field": "duration",
+                    "seqType": "Sequelize.STRING"
+                },
+                "instructions": {
+                    "allowNull": true,
+                    "field": "instructions",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "is_active": {
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "is_active",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "created_at": {
+                    "allowNull": false,
+                    "field": "created_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updated_at": {
+                    "allowNull": false,
+                    "field": "updated_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "report_upload": {
+            "tableName": "report_upload",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "patient_profile_id": {
+                    "allowNull": true,
+                    "field": "patient_profile_id",
+                    "references": {
+                        "model": "patient_profile",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "report_type": {
+                    "allowNull": true,
+                    "field": "report_type",
+                    "seqType": "Sequelize.STRING"
+                },
+                "upload_url": {
+                    "allowNull": true,
+                    "field": "upload_url",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "uploaded_at": {
+                    "allowNull": true,
+                    "field": "uploaded_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "service": {
+            "tableName": "service",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "name": {
+                    "allowNull": true,
+                    "field": "name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "price": {
+                    "allowNull": true,
+                    "field": "price",
+                    "seqType": "Sequelize.FLOAT"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "references": {
+                        "model": "clinic",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                }
+            },
+            "indexes": []
+        },
+        "tasks": {
+            "tableName": "tasks",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "user_id": {
+                    "allowNull": false,
+                    "field": "user_id",
+                    "references": {
+                        "model": "users",
+                        "key": "id"
+                    },
+                    "onDelete": "NO ACTION",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "title": {
+                    "allowNull": false,
+                    "field": "title",
+                    "seqType": "Sequelize.STRING(150)"
+                },
+                "priority": {
+                    "defaultValue": {
+                        "value": "normal"
+                    },
+                    "field": "priority",
+                    "seqType": "Sequelize.STRING"
+                },
+                "is_completed": {
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "is_completed",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "due_date": {
+                    "allowNull": true,
+                    "field": "due_date",
+                    "seqType": "Sequelize.DATE"
+                },
+                "created_at": {
+                    "allowNull": false,
+                    "field": "created_at",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updated_at": {
+                    "allowNull": false,
+                    "field": "updated_at",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": {
+                "a74fabb39a07033be36f0422fc64376ec29277db": {
+                    "fields": [
+                        "user_id",
+                        "is_completed"
+                    ],
+                    "name": "tasks_user_id_is_completed",
+                    "options": {
+                        "indexName": "tasks_user_id_is_completed",
+                        "name": "tasks_user_id_is_completed"
+                    }
+                }
+            }
+        },
+        "users": {
+            "tableName": "users",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "email": {
+                    "allowNull": false,
+                    "unique": true,
+                    "field": "email",
+                    "seqType": "Sequelize.STRING"
+                },
+                "password_hash": {
+                    "allowNull": false,
+                    "field": "password_hash",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "role": {
+                    "allowNull": false,
+                    "field": "role",
+                    "seqType": "Sequelize.STRING"
+                },
+                "first_name": {
+                    "allowNull": true,
+                    "field": "first_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "last_name": {
+                    "allowNull": true,
+                    "field": "last_name",
+                    "seqType": "Sequelize.STRING"
+                },
+                "phone_number": {
+                    "allowNull": true,
+                    "field": "phone_number",
+                    "seqType": "Sequelize.STRING"
+                },
+                "profile_image_url": {
+                    "allowNull": true,
+                    "field": "profile_image_url",
+                    "seqType": "Sequelize.TEXT"
+                },
+                "kyc_level": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "kyc_level",
+                    "seqType": "Sequelize.INTEGER"
+                }
+            },
+            "indexes": []
+        },
+        "vitals_entry": {
+            "tableName": "vitals_entry",
+            "schema": {
+                "id": {
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "allowNull": false,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_id": {
+                    "allowNull": false,
+                    "field": "clinic_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "clinic_patient_id": {
+                    "allowNull": false,
+                    "field": "clinic_patient_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "entry_date": {
+                    "defaultValue": {
+                        "internal": true,
+                        "value": "Sequelize.NOW"
+                    },
+                    "field": "entry_date",
+                    "seqType": "Sequelize.DATEONLY"
+                },
+                "entry_time": {
+                    "field": "entry_time",
+                    "seqType": "Sequelize.TIME"
+                },
+                "recorded_by_admin_id": {
+                    "field": "recorded_by_admin_id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "appointment_id": {
+                    "allowNull": true,
+                    "field": "appointment_id",
+                    "references": {
+                        "model": "appointment",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                }
+            },
+            "indexes": []
+        },
+        "vitals_recorded_value": {
+            "tableName": "vitals_recorded_value",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "vitals_entry_id": {
+                    "allowNull": false,
+                    "field": "vitals_entry_id",
+                    "references": {
+                        "model": "vitals_entry",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "config_id": {
+                    "allowNull": false,
+                    "field": "config_id",
+                    "references": {
+                        "model": "clinic_vital_config",
+                        "key": "id"
+                    },
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "vital_value": {
+                    "allowNull": false,
+                    "field": "vital_value",
+                    "seqType": "Sequelize.STRING"
+                }
+            },
+            "indexes": []
+        }
+    },
+    "path": "C:\\Users\\pc\\fettle-backend\\migrations\\_current.json",
+    "backupPath": "C:\\Users\\pc\\fettle-backend\\migrations\\_current_bak.json",
+    "exists": false,
+    "revision": 1
+}

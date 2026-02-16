@@ -1,11 +1,15 @@
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('DrugCatalog', {
     name: { type: DataTypes.TEXT, allowNull: false },
-    generic_name: { type: DataTypes.TEXT },
-    strength: { type: DataTypes.STRING },
-    form: { type: DataTypes.STRING },
-    manufacturer: { type: DataTypes.TEXT },
-    search_aliases: { type: DataTypes.TEXT },
+    // DB column is character varying, not text — was incorrectly DataTypes.TEXT
+    generic_name: { type: DataTypes.STRING, allowNull: true },
+    strength: { type: DataTypes.STRING, allowNull: true },
+    form: { type: DataTypes.STRING, allowNull: true },
+    manufacturer: { type: DataTypes.STRING, allowNull: true },
+    search_aliases: { type: DataTypes.TEXT, allowNull: true },
     is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
-  }, { tableName: 'drug_catalog', timestamps: false });
+  }, {
+    tableName: 'drug_catalog',
+    timestamps: false
+  });
 };
