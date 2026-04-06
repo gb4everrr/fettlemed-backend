@@ -6,5 +6,6 @@ const { checkPermission } = require('../middleware/rbacMiddleWare');
 
 router.use(authenticate);
 router.get('/kpi-metrics', checkPermission('view_analytics_ops'), dashboardController.getKpiMetrics);
+router.get('/patient/:patientId', authenticate, dashboardController.getPatientDashboard);
 
 module.exports = router;

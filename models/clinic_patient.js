@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     global_patient_id: {
       type: DataTypes.INTEGER,
       allowNull: true
-    },
+    }, //This maps to the global user id NOT patient profile id.
     first_name: {
       type: DataTypes.STRING,
       allowNull: true

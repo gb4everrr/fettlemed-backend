@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 // Ensure Clinic and ClinicAdmin models are imported
-const { User, ClinicPatient, ClinicDoctor, Clinic, ClinicAdmin, DoctorProfile } = require('../models'); 
+const { User, ClinicPatient, ClinicDoctor, Clinic, ClinicAdmin, DoctorProfile,PatientProfile, PatientSelfData } = require('../models'); 
 const { sequelize } = require('../models'); 
 
 const ROLES = require('../config/roles');
@@ -23,7 +23,6 @@ const getPermissionsForRole = (roleName) => {
 exports.register = async (req, res) => {
   const { email, password, role, first_name, last_name, phone_number } = req.body;
   
-  // Start transaction to ensure linking is atomic
   const t = await sequelize.transaction();
 
   try {
@@ -35,7 +34,7 @@ exports.register = async (req, res) => {
 
     const password_hash = await bcrypt.hash(password, 10);
     
-    // 1. Create the User
+    // 1. Create the Base User
     const user = await User.create({
       email,
       password_hash,
@@ -45,59 +44,82 @@ exports.register = async (req, res) => {
       phone_number
     }, { transaction: t });
 
-    // 2. Link Existing Profiles & Grant Permissions
+    // Use this variable to store the ID for the final response
+    let createdPatientProfileId = null;
+
+    // 2. Role-Specific Logic
     if (user.role === 'patient') {
+      // --- NEW FIX: Create Global PatientProfile ---
+      const profile = await PatientProfile.create({
+        user_id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        gender: 'Other',
+        dob: null
+      }, { transaction: t });
+
+      createdPatientProfileId = profile.id;
+
+      // --- EXISTING LOGIC: Link Clinic Records ---
       await ClinicPatient.update(
         { global_patient_id: user.id },
         { where: { global_patient_id: null, phone_number: user.phone_number }, transaction: t }
       );
     } 
     else if (user.role === 'doctor') {
-      // A. Find all "Ghost" profiles for this phone number
+      // --- DOCTOR LOGIC: Preserved exactly as in your original file ---
       const ghostProfiles = await ClinicDoctor.findAll({
         where: { global_doctor_id: null, phone_number: user.phone_number },
         transaction: t
       });
 
       if (ghostProfiles.length > 0) {
-        // B. Link the Clinical Profiles
         await ClinicDoctor.update(
           { global_doctor_id: user.id },
           { where: { global_doctor_id: null, phone_number: user.phone_number }, transaction: t }
         );
 
-        // C. CREATE PERMISSIONS (The Critical Fix)
-        // For every clinic where this doctor was a "Ghost", create a ClinicAdmin record
-        // so they can now log in and see that clinic.
         const permissionPromises = ghostProfiles.map(profile => {
           const finalRole = profile.assigned_role || 'DOCTOR';
           return ClinicAdmin.findOrCreate({
             where: { user_id: user.id, clinic_id: profile.clinic_id },
-            defaults: {
-              role: finalRole,
-              active: true
-            },
+            defaults: { role: finalRole, active: true },
             transaction: t
           });
         });
-        
         await Promise.all(permissionPromises);
       }
+      
+      // Also create their professional profile
+      await DoctorProfile.create({
+        user_id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        phone_number: user.phone_number
+      }, { transaction: t });
     }
 
     await t.commit();
 
-    // Generate Token
+    // 3. Generate Token
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
-    res.status(201).json({ token, user: { id: user.id, ...user.toJSON() } });
+    // 4. Consistent JSON Response
+    // We add patient_profile_id without breaking the original structure
+    res.status(201).json({ 
+      token, 
+      user: { 
+        ...user.toJSON(),
+        patient_profile_id: createdPatientProfileId 
+      } 
+    });
 
   } catch (err) {
-    await t.rollback();
+    if (t) await t.rollback();
     console.error('Registration error:', err);
     res.status(500).json({ message: 'Internal server error during registration.' });
   }
@@ -116,6 +138,7 @@ exports.login = async (req, res) => {
 
     let clinics = [];
     let profileSetupComplete = false;
+    let patientProfileId = null;
 
     if (user.role === 'clinic_admin') {
       // Fetch all clinics associated with the admin
@@ -139,7 +162,26 @@ exports.login = async (req, res) => {
       // The profile is considered complete if the core professional details are filled.
       profileSetupComplete = !!(doctorProfile && doctorProfile.medical_reg_no && doctorProfile.specialization);
     } else if (user.role === 'patient') {
-      // ... (existing logic)
+      const patientProfile = await PatientProfile.findOne({ where: { user_id: user.id } });
+      
+      if (patientProfile) {
+        patientProfileId = patientProfile.id;
+        
+        // Fetch the Lifestyle data from PatientSelfData
+        const selfData = await PatientSelfData.findOne({
+          where: { 
+            patient_profile_id: patientProfile.id, 
+            data_type: 'medical_history' 
+          }
+        });
+
+        // DEFINITION: Complete = Has DOB (Step 1) AND Has Lifestyle JSON (Step 3)
+        // We don't care if they skipped Step 2 (Conditions/Allergies)
+        const hasBasics = !!patientProfile.date_of_birth;
+        const hasLifestyle = !!(selfData && selfData.data && selfData.data.lifestyle);
+
+        profileSetupComplete = hasBasics && hasLifestyle;
+      }
     }
 
     const token = jwt.sign(
@@ -157,6 +199,7 @@ exports.login = async (req, res) => {
         last_name: user.last_name,
         phone_number: user.phone_number,
         profileSetupComplete: profileSetupComplete,
+        patient_profile_id: patientProfileId,
     };
 
     // Add clinics array only for roles that need it

@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { ClinicAdmin, Clinic, Invoice, ClinicPatient, Appointment } = require('../models');
+const { User, ClinicAdmin, Clinic, Invoice, ClinicPatient, Appointment, PatientProfile, Prescription, ClinicDoctor,VitalsEntry, VitalsRecordedValue,ClinicVitalConfig } = require('../models');
 
 
 
@@ -93,5 +93,115 @@ exports.getKpiMetrics = async (req, res) => {
   } catch (err) {
     console.error('Error fetching KPI metrics:', err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getPatientDashboard = async (req, res) => {
+  const { patientId } = req.params; // The Profile ID (e.g., 3)
+
+  try {
+    // 1. Fetch Global Profile by PK to get the associated user_id
+    const patientProfile = await PatientProfile.findByPk(patientId, {
+      attributes: ['id', 'user_id', 'abha_number', 'abha_address']
+    });
+
+    if (!patientProfile) {
+      return res.status(404).json({ message: 'Patient profile not found' });
+    }
+
+    // 2. Find all local clinic records linked to that User (e.g., User 6)
+    const clinicRecords = await ClinicPatient.findAll({
+      where: { global_patient_id: patientProfile.user_id },
+      attributes: ['id']
+    });
+
+    const localPatientIds = clinicRecords.map(r => r.id);
+
+    // If no clinic linkings exist, return the profile with empty lists
+    if (!localPatientIds.length) {
+      return res.json({
+        patient: patientProfile,
+        upcoming_appointments: [],
+        active_prescriptions: [],
+        latest_vitals: []
+      });
+    }
+
+    // 3. Fetch Upcoming Appointments
+    const appointments = await Appointment.findAll({
+      where: {
+        // Use clinic_patient_id as per your model
+        clinic_patient_id: { [Op.in]: localPatientIds }, 
+        // Filter for today onwards (using inline date logic)
+        datetime_start: { [Op.gte]: new Date().setHours(0, 0, 0, 0) },
+        status: { [Op.not]: 2 } // Assuming 2 is 'cancelled'
+      },
+      include: [
+        { 
+          model: ClinicDoctor, 
+          as: 'doctor', // Correct lowercase alias
+          attributes: ['first_name', 'last_name', 'specialization'] // Fetch directly from clinic_doctor
+        },
+        { 
+          model: Clinic, 
+          as: 'clinic', // Correct lowercase alias
+          attributes: ['name', 'address','timezone'] 
+        }
+      ],
+      order: [['datetime_start', 'ASC']],
+      limit: 5 
+    });
+
+    // --- STEP 3: Fetch Prescriptions (Using Local IDs) ---
+    const activePrescriptions = await Prescription.findAll({
+  where: {
+    clinic_patient_id: { [Op.in]: localPatientIds } // FIXED: uses clinic_patient_id
+  },
+  limit: 5,
+  order: [['created_at', 'DESC']]
+});
+
+// --- STEP 5: Fetch Latest Vitals (Using Local IDs) ---
+    const latestVitalEntry = await VitalsEntry.findOne({
+      where: { 
+        clinic_patient_id: { [Op.in]: localPatientIds } 
+      },
+      // FIX: Database uses 'entry_date'. Using 'id' as a tie-breaker for the most recent.
+      order: [['entry_date', 'DESC'], ['id', 'DESC']], 
+      include: [{
+        model: VitalsRecordedValue,
+        as: 'values', // From vitals_entry.js association
+        include: [{ 
+          model: ClinicVitalConfig, 
+          as: 'config', // From vitals_recorded_value.js association
+          attributes: ['vital_name', 'unit'] // Database uses 'vital_name'
+        }]
+      }]
+    });
+
+    const vitalStats = [];
+    if (latestVitalEntry && latestVitalEntry.values) {
+      latestVitalEntry.values.forEach(record => {
+        if (record.config) {
+          vitalStats.push({
+            name: record.config.vital_name, // Mapping 'vital_name' to 'name' for Flutter
+            value: record.vital_value,     // Database uses 'vital_value'
+            unit: record.config.unit || ''
+          });
+        }
+      });
+    }
+
+    // --- STEP 5: Aggregate Response ---
+    res.json({
+      patient: patientProfile,
+      upcoming_appointments: appointments,
+      active_prescriptions: activePrescriptions,
+      latest_vitals: vitalStats
+    });
+
+  } catch (error) {
+    console.error("Dashboard Error:", error);
+    res.status(500).json({ message: 'Error fetching dashboard data', error: error.message });
   }
 };

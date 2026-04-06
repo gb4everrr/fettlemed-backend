@@ -41,7 +41,11 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const analyricsRoutes = require('./routes/analyticsRoutes');
 const encounterRoutes = require('./routes/encounterRoutes');
 const labRoutes = require('./routes/labOrderRoutes');
-const diagnosisRoutes = require('./routes/diagnosisRoutes')
+const diagnosisRoutes = require('./routes/diagnosisRoutes');
+const patientRoutes = require('./routes/patientRoutes');
+const documentRoutes = require('./routes/documentRoutes');
+const profileAggregatedRoutes = require('./routes/profileAggregatedRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 // Mounting route files
 app.use('/api/auth', authRoutes);
@@ -62,6 +66,10 @@ app.use('/api/analytics', analyricsRoutes);
 app.use('/api/encounter',encounterRoutes);
 app.use('/api/lab-orders',labRoutes);
 app.use('/api/diagnosis', diagnosisRoutes);
+app.use('/api/patient',patientRoutes);
+app.use('/api/documents',documentRoutes);
+app.use('/api/profile',profileAggregatedRoutes);
+app.use('/api/chat',chatRoutes);
 
 
 

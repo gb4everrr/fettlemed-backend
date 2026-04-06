@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
     timezone: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: 'UTC',
+      defaultValue: 'Asia/Kolkata',
       comment: 'IANA timezone name, e.g., "Asia/Kolkata"'
     },
     brandColor: {

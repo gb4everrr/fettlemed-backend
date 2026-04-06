@@ -54,10 +54,16 @@ module.exports = (sequelize, DataTypes) => {
     updatedAt: false
   });
 
+  // Fixed: Merged both associations into a single block
   User.associate = (models) => {
     User.hasOne(models.DoctorProfile, {
       foreignKey: 'user_id',
       as: 'doctorProfile'
+    });
+    
+    User.hasOne(models.PatientProfile, {
+      foreignKey: 'user_id',
+      as: 'patientProfile'
     });
   };
 
