@@ -308,3 +308,83 @@ exports.getLatestPatientVitals = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// GET /catalog?clinic_id=X
+// Returns global catalog with an already_added flag for this clinic
+exports.getVitalCatalog = async (req, res) => {
+  const { clinic_id } = req.query;
+  try {
+    const clinicIdInt = parseInt(clinic_id);
+    if (isNaN(clinicIdInt)) {
+      return res.status(400).json({ error: 'Invalid clinic_id' });
+    }
+
+    const { GlobalVitalCatalog, ClinicVitalConfig } = require('../models');
+
+    // Get all catalog entries that are active
+    const catalog = await GlobalVitalCatalog.findAll({
+      where: { is_active: true },
+      order: [['category', 'ASC'], ['vital_name', 'ASC']]
+    });
+
+    // Get this clinic's already-added catalog items
+    const existing = await ClinicVitalConfig.findAll({
+      where: { clinic_id: clinicIdInt, is_active: true },
+      attributes: ['catalog_id']
+    });
+
+    const addedCatalogIds = new Set(existing.map(e => e.catalog_id).filter(Boolean));
+
+    const result = catalog.map(item => ({
+      ...item.get({ plain: true }),
+      already_added: addedCatalogIds.has(item.id)
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error('Error fetching catalog:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /catalog/add
+// Copies a catalog item into the clinic's library
+exports.addCatalogItemToLibrary = async (req, res) => {
+  const { clinic_id, catalog_id } = req.body;
+  try {
+    const clinicIdInt = parseInt(clinic_id);
+    if (isNaN(clinicIdInt)) {
+      return res.status(400).json({ error: 'Invalid clinic_id' });
+    }
+
+    const { GlobalVitalCatalog, ClinicVitalConfig } = require('../models');
+
+    const catalogItem = await GlobalVitalCatalog.findByPk(catalog_id);
+    if (!catalogItem) {
+      return res.status(404).json({ error: 'Catalog item not found' });
+    }
+
+    // Prevent duplicates
+    const existing = await ClinicVitalConfig.findOne({
+      where: { clinic_id: clinicIdInt, catalog_id }
+    });
+    if (existing) {
+      return res.status(409).json({ error: 'This vital is already in your library' });
+    }
+
+    const newItem = await ClinicVitalConfig.create({
+      clinic_id: clinicIdInt,
+      catalog_id,
+      vital_name: catalogItem.vital_name,
+      data_type:  catalogItem.data_type,
+      unit:       catalogItem.unit,
+      is_active:  true,
+      is_required: false
+    });
+
+    res.status(201).json(newItem);
+  } catch (err) {
+    console.error('Error adding catalog item:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
