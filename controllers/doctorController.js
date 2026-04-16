@@ -349,7 +349,7 @@ exports.getDetailedAppointments = async (req, res) => {
                 {
                     model: Clinic,
                     as: 'clinic',
-                    attributes: ['name']
+                    attributes: ['id', 'name', 'timezone']
                 }
             ],
             order: [['datetime_start', 'DESC']]

@@ -1,6 +1,7 @@
 // src/controllers/clinicVitalsController.js
 
-const { ClinicVitalConfig, VitalsEntry, VitalsRecordedValue, ClinicAdmin, ClinicDoctor } = require('../models');
+const { ClinicVitalConfig, VitalsEntry, VitalsRecordedValue, ClinicAdmin, ClinicDoctor, Clinic } = require('../models');
+const { formatInTimeZone } = require('date-fns-tz');
 
 
 // RENAMED: createVitalConfig → createVitalLibraryItem
@@ -137,6 +138,13 @@ exports.submitPatientVitals = async (req, res) => {
       }
     }
 
+    // Derive entry_date and entry_time in the clinic's local timezone
+    const clinic = await Clinic.findByPk(clinicIdInt, { attributes: ['timezone'] });
+    const clinicTimezone = clinic?.timezone || 'Asia/Kolkata';
+    const now = new Date();
+    const clinicEntryDate = formatInTimeZone(now, clinicTimezone, 'yyyy-MM-dd');
+    const clinicEntryTime = formatInTimeZone(now, clinicTimezone, 'HH:mm:ss');
+
     // Create new vitals entry
     console.log('Creating vitals entry...');
     const entry = await VitalsEntry.create({
@@ -144,7 +152,8 @@ exports.submitPatientVitals = async (req, res) => {
       clinic_patient_id: parseInt(clinic_patient_id),
       recorded_by_admin_id: parseInt(recorded_by_admin_id),
       appointment_id: appointment_id ? parseInt(appointment_id) : null,
-      entry_time: new Date().toLocaleTimeString('en-GB', { hour12: false })
+      entry_date: clinicEntryDate,
+      entry_time: clinicEntryTime,
     });
 
     console.log('Created entry with ID:', entry.id);

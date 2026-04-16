@@ -431,20 +431,24 @@ exports.getAppointments = async (req, res) => {
     const appointments = await Appointment.findAll({
       where: whereClause,
       include: [
-        { 
-          model: ClinicDoctor, 
+        {
+          model: ClinicDoctor,
           as: 'doctor',
           attributes: ['id', 'first_name', 'last_name']
         },
-        { 
-  model: ClinicPatient, 
-  as: 'patient',
-  attributes: [
-    'id', 'first_name', 'last_name', 'dob','gender',
-    // Calculate age on the fly in Postgres
-    [sequelize.literal("EXTRACT(YEAR FROM AGE(CURRENT_DATE, dob))"), 'age']
-  ]
-}
+        {
+          model: ClinicPatient,
+          as: 'patient',
+          attributes: [
+            'id', 'first_name', 'last_name', 'dob', 'gender',
+            [sequelize.literal("EXTRACT(YEAR FROM AGE(CURRENT_DATE, dob))"), 'age']
+          ]
+        },
+        {
+          model: Clinic,
+          as: 'clinic',
+          attributes: ['id', 'name', 'timezone']
+        }
       ],
       order: [['datetime_start', 'ASC']]
     });
@@ -486,7 +490,7 @@ exports.getAppointments = async (req, res) => {
 
 exports.checkInPatient = async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const appointment = await Appointment.findByPk(id);
     if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
@@ -496,23 +500,22 @@ exports.checkInPatient = async (req, res) => {
       return res.status(400).json({ error: 'Patient already checked in.' });
     }
 
-    // MD Rule #18: Server time only
-    const serverTime = new Date();
+    // new Date() is always a UTC instant — correct for DB storage regardless of server location.
+    const arrivalTime = new Date();
 
     await appointment.update({
-      arrival_time: serverTime,
-      status: 1, // Updating status to "Confirmed/Waiting"
-      // If it's an emergency check-in, you might pass body.type = 3 here
+      arrival_time: arrivalTime,
+      status: 1, // Confirmed/Waiting
     });
 
-    return res.json({ 
-      success: true, 
-      arrival_time: serverTime,
-      status: 1 
+    return res.json({
+      success: true,
+      // Return as ISO string; frontend formats using clinic timezone
+      arrival_time: arrivalTime.toISOString(),
+      status: 1
     });
   } catch (error) {
     console.error('Check-in error:', error);
     return res.status(500).json({ error: 'Failed to check in patient' });
   }
 };
-

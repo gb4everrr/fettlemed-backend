@@ -34,7 +34,9 @@ exports.addAvailability = async (req, res) => {
     console.log('[addAvailability] DoctorAvailability record created successfully:', record.id);
     
     console.log('[addAvailability] Generating slots for 3 months...');
-    await generateSlotsFor3Months({ clinic_doctor_id, clinic_id, weekday, start_time, end_time });
+    const clinic = await Clinic.findByPk(clinic_id, { attributes: ['timezone'] });
+    const clinicTimezone = clinic?.timezone || 'Asia/Kolkata';
+    await generateSlotsFor3Months({ clinic_doctor_id, clinic_id, weekday, start_time, end_time, clinicTimezone });
     console.log('[addAvailability] Slots generated successfully.');
 
     res.status(201).json(record);
@@ -53,7 +55,9 @@ exports.updateAvailability = async (req, res) => {
     
     // Updated where clause to use clinic_doctor_id
     await DoctorAvailability.update(updates, { where: { id, clinic_id, clinic_doctor_id } });
-    await generateSlotsFor3Months({ ...updates, clinic_doctor_id, clinic_id });
+    const clinic = await Clinic.findByPk(clinic_id, { attributes: ['timezone'] });
+    const clinicTimezone = clinic?.timezone || 'Asia/Kolkata';
+    await generateSlotsFor3Months({ ...updates, clinic_doctor_id, clinic_id, clinicTimezone });
     res.json({ message: 'Availability updated and slots regenerated.' });
   } catch (err) {
     res.status(500).json({ error: err.message });

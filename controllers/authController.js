@@ -21,7 +21,8 @@ const getPermissionsForRole = (roleName) => {
 };
 
 exports.register = async (req, res) => {
-  const { email, password, role, first_name, last_name, phone_number } = req.body;
+  const { password, role, first_name, last_name, phone_number } = req.body;
+  const email = req.body.email.toLowerCase().trim();
   
   const t = await sequelize.transaction();
 
@@ -127,7 +128,8 @@ exports.register = async (req, res) => {
 
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  const email = req.body.email.toLowerCase().trim();
 
   try {
     const user = await User.findOne({ where: { email } });

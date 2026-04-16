@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     // REPLACED single 'note' with the 3 fields you requested
     subjective: { type: DataTypes.TEXT },
     objective: { type: DataTypes.TEXT },
+    provisional_diagnosis: { type: DataTypes.TEXT },
     observations_private: { type: DataTypes.TEXT }, // Doctor only
     diagnosis_comments: DataTypes.TEXT,
     

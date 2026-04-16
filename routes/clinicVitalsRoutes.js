@@ -8,22 +8,21 @@ const { checkPermission } = require('../middleware/rbacMiddleWare');
 
 router.use(authenticate);
 
-// --- Library & Templates ---
+// --- Global Catalog ---
+// Read the global catalog (with already_added flags for this clinic)
+router.get('/catalog', checkPermission('manage_vitals_entry'), clinicVitalsController.getVitalCatalog);
+// Add a catalog item into the clinic's library
+router.post('/catalog/add', checkPermission('manage_vitals_library'), clinicVitalsController.addCatalogItemToLibrary);
+
+// --- Library ---
 router.post('/library/create', checkPermission('manage_vitals_library'), clinicVitalsController.createVitalLibraryItem);
 router.put('/library/update/:id', checkPermission('manage_vitals_library'), clinicVitalsController.updateVitalLibraryItem);
 router.delete('/library/delete/:id', checkPermission('manage_vitals_library'), clinicVitalsController.deleteVitalLibraryItem);
-router.get('/library/all', checkPermission('manage_vitals_entry'), clinicVitalsController.getClinicVitalLibrary); 
+router.get('/library/all', checkPermission('manage_vitals_entry'), clinicVitalsController.getClinicVitalLibrary);
 
 // --- Assignments ---
-// FIX: Changed from 'manage_staff' to 'manage_vitals_library'
-// This allows Doctor Owners/Partners to access this route
 router.post('/doctor-assignments/assign', checkPermission('manage_vitals_library'), doctorVitalAssignmentController.assignVitalsToDoctor);
-
-// Read Access
 router.get('/doctor-assignments/:clinic_doctor_id', checkPermission('view_own_schedule'), doctorVitalAssignmentController.getDoctorAssignedVitals);
-
-// FIX: Changed from 'manage_staff' to 'view_vitals_settings' or 'manage_vitals_library'
-// 'view_vitals_settings' allows Visiting doctors to see the list. 'manage_vitals_library' allows editing.
 router.get('/assignment-manager', checkPermission('view_vitals_settings'), doctorVitalAssignmentController.getLibraryWithDoctorAssignments);
 
 // --- Entries ---
